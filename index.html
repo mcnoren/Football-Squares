@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Squares Helper</title>
+    <style>
+        :root {
+            --primary: #2e7d32; /* Grass Green */
+            --secondary: #1b5e20; /* Dark Green */
+            --accent: #ffeb3b; /* Yellow */
+            --text-light: #ffffff;
+            --text-dark: #333333;
+            --highlight: #ff5722; /* Orange for active player */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* --- Buttons & Inputs --- */
+        button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background 0.2s;
+            margin: 5px;
+        }
+
+        .btn-primary { background-color: var(--primary); color: var(--text-light); }
+        .btn-primary:hover { background-color: var(--secondary); }
+        
+        .btn-danger { background-color: #d32f2f; color: white; }
+        .btn-danger:hover { background-color: #b71c1c; }
+
+        .btn-action { background-color: #0288d1; color: white; padding: 5px 10px; font-size: 0.9em; }
+        
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin: 5px;
+        }
+
+        /* --- Screens --- */
+        .screen { display: none; }
+        .active-screen { display: block; }
+
+        /* --- Setup Phase --- */
+        .player-creation {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .player-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .player-badge {
+            background: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            user-select: none;
+            border: 2px solid transparent;
+        }
+
+        .player-badge.selected {
+            background: var(--highlight);
+            color: white;
+            border-color: var(--secondary);
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+        }
+
+        /* --- The Grid --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 40px repeat(10, 1fr); /* 1 Header col + 10 game cols */
+            gap: 2px;
+            background-color: #ccc;
+            border: 2px solid #333;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .grid-cell {
+            background-color: white;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .grid-cell.taken {
+            background-color: #e8f5e9;
+            color: var(--secondary);
+        }
+
+        .grid-cell.winner {
+            background-color: var(--accent);
+            animation: pulse 1s infinite;
+        }
+
+        .header-cell {
+            background-color: var(--secondary);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .corner-cell {
+            background-color: #333;
+            color: white;
+            font-size: 0.7em;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        /* --- Game Dashboard --- */
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .team-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-display {
+            font-size: 3em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .quarter-log {
+            text-align: left;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .grid-cell { font-size: 0.6em; }
+            .scoreboard { flex-direction: column; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="setup-screen" class="screen active-screen">
+        <h1>🏈 Square Setup</h1>
+        
+        <div class="player-creation">
+            <h3>1. Create Players</h3>
+            <input type="text" id="new-player-initials" placeholder="Enter Initials (e.g. JD)" maxlength="3">
+            <button class="btn-primary" onclick="addPlayer()">Add Player</button>
+            <div id="player-list" class="player-list">
+                </div>
+            <p style="font-size: 0.9em; color: #666;">Click a player above to select them, then click squares below.</p>
+        </div>
+
+        <h3>2. Fill the Grid</h3>
+        <p id="squares-count">Squares filled: 0 / 100</p>
+        
+        <div id="setup-grid" class="grid-container">
+            </div>
+
+        <button class="btn-primary" style="font-size: 1.2em; margin-top: 20px;" onclick="startGame()">Start Game & Generate Numbers</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <h1>🏈 Live Game</h1>
+        
+        <div class="scoreboard">
+            <div class="team-score">
+                <input type="text" id="team1-name" value="Top Team" style="background:transparent; border:none; color:white; text-align:center; font-weight:bold; font-size:1.2em;">
+                <div class="score-display" id="score1">0</div>
+                <div class="score-controls">
+                    <button class="btn-action" onclick="updateScore(1, 6)">+TD</button>
+                    <button class="btn-action" onclick="updateScore(1, 1)">+XP</button>
+                    <button class="btn-action" onclick="updateScore(1, 3)">+FG</button>
+                    <button class="btn-action" onclick="updateScore(1, 2)">+2</button>
+                    <button class="btn-action" onclick="updateScore(1, -1)">-1</button>
+                </div>
+            </div>
+            <div style="align-self:center; font-size: 2em;">VS</div>
+            <div class="team-score">
+                <input type="text" id="team2-name" value="Left Team" style="background:transparent; border:none; color:white; text-align:center; font-weight:bold; font-size:1.2em;">
+                <div class="score-display" id="score2">0</div>
+                <div class="score-controls">
+                    <button class="btn-action" onclick="updateScore(2, 6)">+TD</button>
+                    <button class="btn-action" onclick="updateScore(2, 1)">+XP</button>
+                    <button class="btn-action" onclick="updateScore(2, 3)">+FG</button>
+                    <button class="btn-action" onclick="updateScore(2, 2)">+2</button>
+                    <button class="btn-action" onclick="updateScore(2, -1)">-1</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="endQuarter()">End Quarter & Check Winner</button>
+
+        <div id="game-grid" class="grid-container">
+            </div>
+
+        <div class="quarter-log">
+            <h3>Quarter Winners:</h3>
+            <ul id="winner-log"></ul>
+        </div>
+        
+        <button class="btn-danger" style="margin-top: 30px;" onclick="resetGame()">Reset Game</button>
+    </div>
+
+</div>
+
+<script>
+    // State
+    let players = [];
+    let activePlayerIndex = null;
+    let gridData = Array(100).fill(null); // 0-99 representing the 10x10 grid
+    let team1Score = 0; // Top Team
+    let team2Score = 0; // Left Team
+    let topNumbers = []; // 0-9 random
+    let leftNumbers = []; // 0-9 random
+    let quarterCount = 1;
+
+    // Initialization
+    function initGrid(elementId, isGame) {
+        const container = document.getElementById(elementId);
+        container.innerHTML = '';
+
+        // Corner
+        const corner = document.createElement('div');
+        corner.className = 'grid-cell corner-cell';
+        corner.innerHTML = 'Left<br>Top';
+        container.appendChild(corner);
+
+        // Top Header (Team 1)
+        for(let i=0; i<10; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell header-cell';
+            cell.id = isGame ? `top-head-${i}` : `setup-top-${i}`;
+            cell.textContent = isGame ? topNumbers[i] : '?';
+            container.appendChild(cell);
+        }
+
+        // Rows
+        for(let r=0; r<10; r++) {
+            // Left Header (Team 2)
+            const leftHead = document.createElement('div');
+            leftHead.className = 'grid-cell header-cell';
+            leftHead.id = isGame ? `left-head-${r}` : `setup-left-${r}`;
+            leftHead.textContent = isGame ? leftNumbers[r] : '?';
+            container.appendChild(leftHead);
+
+            // Grid Cells
+            for(let c=0; c<10; c++) {
+                const index = r * 10 + c;
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.index = index;
+                cell.id = isGame ? `game-cell-${r}-${c}` : `setup-cell-${index}`;
+                
+                if(gridData[index]) {
+                    cell.textContent = gridData[index];
+                    cell.classList.add('taken');
+                    // Color code background based on player (simple hash for consistent color)
+                    // Optional styling enhancement
+                }
+
+                if(!isGame) {
+                    cell.onclick = () => handleSquareClick(index);
+                }
+
+                container.appendChild(cell);
+            }
+        }
+    }
+
+    // --- SETUP LOGIC ---
+
+    function addPlayer() {
+        const input = document.getElementById('new-player-initials');
+        const initials = input.value.trim().toUpperCase();
+        
+        if(!initials) return alert("Please enter initials");
+        if(players.includes(initials)) return alert("Player already exists");
+
+        players.push(initials);
+        input.value = '';
+        renderPlayerList();
+        
+        // Auto select new player
+        selectPlayer(players.length - 1);
+    }
+
+    function renderPlayerList() {
+        const list = document.getElementById('player-list');
+        list.innerHTML = '';
+        players.forEach((p, index) => {
+            const badge = document.createElement('div');
+            badge.className = `player-badge ${index === activePlayerIndex ? 'selected' : ''}`;
+            badge.textContent = p;
+            badge.onclick = () => selectPlayer(index);
+            list.appendChild(badge);
+        });
+    }
+
+    function selectPlayer(index) {
+        activePlayerIndex = index;
+        renderPlayerList();
+    }
+
+    function handleSquareClick(index) {
+        if(activePlayerIndex === null) {
+            alert("Please create and select a player first!");
+            return;
+        }
+        
+        // Toggle logic
+        if(gridData[index] === players[activePlayerIndex]) {
+            // Unselect if owned by current player
+            gridData[index] = null;
+        } else {
+            // Select
+            gridData[index] = players[activePlayerIndex];
+        }
+        
+        // Update UI
+        const cell = document.getElementById(`setup-cell-${index}`);
+        cell.textContent = gridData[index] || '';
+        cell.className = gridData[index] ? 'grid-cell taken' : 'grid-cell';
+        
+        updateCounts();
+    }
+
+    function updateCounts() {
+        const filled = gridData.filter(x => x !== null).length;
+        document.getElementById('squares-count').textContent = `Squares filled: ${filled} / 100`;
+    }
+
+    // --- GAME LOGIC ---
+
+    function startGame() {
+        const filled = gridData.filter(x => x !== null).length;
+        if(filled === 0) {
+            if(!confirm("The grid is empty. Start anyway?")) return;
+        }
+
+        // Generate Random Numbers
+        topNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
+        leftNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
+
+        // Switch Screens
+        document.getElementById('setup-screen').classList.remove('active-screen');
+        document.getElementById('game-screen').classList.add('active-screen');
+
+        // Render Game Grid
+        initGrid('game-grid', true);
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function updateScore(team, points) {
+        if(team === 1) {
+            team1Score += points;
+            if(team1Score < 0) team1Score = 0;
+            document.getElementById('score1').textContent = team1Score;
+        } else {
+            team2Score += points;
+            if(team2Score < 0) team2Score = 0;
+            document.getElementById('score2').textContent = team2Score;
+        }
+        clearHighlights(); // Clear previous win highlights if score changes
+    }
+
+    function getLastDigit(num) {
+        return Math.abs(num) % 10;
+    }
+
+    function endQuarter() {
+        const topDigit = getLastDigit(team1Score);
+        const leftDigit = getLastDigit(team2Score);
+
+        // Find indices in the headers
+        const colIndex = topNumbers.indexOf(topDigit); // Top Header corresponds to Columns
+        const rowIndex = leftNumbers.indexOf(leftDigit); // Left Header corresponds to Rows
+
+        // Highlight Winning Square
+        clearHighlights();
+        
+        // Highlight Headers
+        document.getElementById(`top-head-${colIndex}`).style.backgroundColor = 'var(--highlight)';
+        document.getElementById(`left-head-${rowIndex}`).style.backgroundColor = 'var(--highlight)';
+
+        // Highlight Cell
+        const winningCell = document.getElementById(`game-cell-${rowIndex}-${colIndex}`);
+        winningCell.classList.add('winner');
+        
+        const winnerName = gridData[rowIndex * 10 + colIndex] || "Empty Square";
+        
+        // Log it
+        const log = document.getElementById('winner-log');
+        const entry = document.createElement('li');
+        const qName = quarterCount <= 4 ? `Q${quarterCount}` : `OT`;
+        entry.innerHTML = `<strong>${qName}:</strong> Top ${team1Score} - Left ${team2Score} (Sq: ${topDigit}, ${leftDigit}) &rarr; <strong>${winnerName}</strong>`;
+        log.appendChild(entry);
+
+        quarterCount++;
+    }
+
+    function clearHighlights() {
+        document.querySelectorAll('.grid-cell').forEach(c => {
+            c.classList.remove('winner');
+            if(c.classList.contains('header-cell')) {
+                c.style.backgroundColor = ''; // Reset to CSS default
+            }
+        });
+    }
+
+    function resetGame() {
+        if(!confirm("Are you sure? This will clear everything.")) return;
+        location.reload();
+    }
+
+    // Initialize Setup Grid on Load
+    initGrid('setup-grid', false);
+
+</script>
+
+</body>
+</html>

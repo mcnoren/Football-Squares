@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Squares - Classic Design</title>
+    <title>Football Squares Pro</title>
     <style>
         :root {
-            --primary: #2e7d32; /* Grass Green */
-            --secondary: #1b5e20; /* Dark Green */
-            --highlight: #ff9800; /* Orange for active selection */
-            --winner-border: #ffd700; /* Gold */
             --bg-color: #f4f4f9;
             --text-color: #333;
+            --border-color: #ccc;
+            --cell-size: 65px; /* Bigger grid cells */
+            --winner-border: #ffd700; /* Gold */
         }
 
         body {
@@ -21,18 +20,12 @@
             margin: 0;
             height: 100vh;
             display: flex;
-            flex-direction: column;
-        }
-
-        /* --- LAYOUT --- */
-        .app-container {
-            display: flex;
-            flex: 1;
             overflow: hidden;
         }
 
+        /* --- SIDEBAR (Player List) --- */
         .sidebar {
-            width: 250px;
+            width: 300px;
             background: white;
             border-right: 1px solid #ddd;
             display: flex;
@@ -42,6 +35,25 @@
             z-index: 10;
         }
 
+        .player-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .player-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+        .player-item:hover { background: #f9f9f9; }
+        .player-item.active { background: #e3f2fd; font-weight: bold; }
+
+        /* --- MAIN AREA --- */
         .main-content {
             flex: 1;
             padding: 20px;
@@ -51,486 +63,480 @@
             align-items: center;
         }
 
-        /* --- PLAYER LIST --- */
-        .sidebar h2 { margin-top: 0; font-size: 1.2rem; color: var(--secondary); }
+        /* --- SCOREBOARD --- */
+        .scoreboard {
+            background: white;
+            width: 95%; /* Longer sideways */
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
         
-        .player-list {
-            flex: 1;
-            overflow-y: auto;
-            margin-top: 10px;
+        .team-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+        }
+        
+        .score-big {
+            font-size: 3.5rem;
+            font-weight: 800;
+            font-family: monospace;
+            line-height: 1;
         }
 
-        .player-item {
-            padding: 10px;
-            margin-bottom: 8px;
-            background: #f0f0f0;
-            border-radius: 6px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+        .controls {
+            display: flex;
+            gap: 5px;
         }
 
-        .player-item:hover { background: #e0e0e0; }
-        .player-item.active {
-            background: #e8f5e9;
-            border-color: var(--primary);
-            color: var(--secondary);
+        /* --- THE GRID LAYOUT --- */
+        .grid-area {
+            display: grid;
+            grid-template-columns: 50px auto; /* Left Label | Grid */
+            grid-template-rows: 50px auto;    /* Top Label  | Grid */
+            gap: 5px;
+        }
+
+        /* Team Names on Grid */
+        .grid-label-top {
+            grid-column: 2;
+            grid-row: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #555;
+            text-transform: uppercase;
         }
-
-        .player-count {
-            float: right;
-            background: #ccc;
-            color: white;
-            border-radius: 10px;
-            padding: 2px 6px;
-            font-size: 0.8em;
-        }
-        .player-item.active .player-count { background: var(--primary); }
-
-        /* --- BUTTONS --- */
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        
+        .grid-label-left {
+            grid-column: 1;
+            grid-row: 2;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
             font-weight: bold;
-            font-size: 0.9rem;
-            width: 100%;
-            margin-bottom: 10px;
-            transition: background 0.2s;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--secondary); }
-        .btn-action { width: auto; padding: 5px 10px; font-size: 0.8rem; margin: 2px; }
-        .btn-danger { background: #d32f2f; color: white; }
-
-        /* --- MODAL --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        .modal-box {
-            background: white; padding: 25px; border-radius: 8px;
-            width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        .modal-box input {
-            width: 100%; padding: 8px; margin: 8px 0;
-            box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+            color: #555;
+            text-transform: uppercase;
         }
 
-        /* --- GRID --- */
-        .grid-wrapper {
-            display: inline-grid;
-            /* 40px headers + 10 columns */
-            grid-template-columns: 50px repeat(10, 50px);
-            grid-template-rows: 50px repeat(10, 50px);
-            gap: 2px;
-            background: #333;
-            border: 4px solid #333;
-            margin-top: 20px;
+        /* The Actual Grid */
+        .grid-container {
+            grid-column: 2;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: var(--cell-size) repeat(10, var(--cell-size));
+            grid-template-rows: var(--cell-size) repeat(10, var(--cell-size));
+            border: 2px solid #333;
         }
 
         .cell {
             background: white;
+            border: 1px solid #ccc;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            font-size: 1.1rem;
             cursor: pointer;
             user-select: none;
+            color: black; /* Always black text */
             position: relative;
-            font-size: 0.9rem;
         }
 
+        /* Header Cells (Numbers) */
         .cell.header {
-            background: var(--secondary);
             color: white;
-            cursor: default;
+            font-size: 1.3rem;
+            border: 1px solid rgba(0,0,0,0.2);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Active Winning Box (Current Score) */
+        .cell.current-winner {
+            box-shadow: inset 0 0 0 4px var(--winner-border);
+            background-color: rgba(255, 215, 0, 0.2); /* Light gold tint */
+            z-index: 5;
+        }
+
+        /* Past Quarter Winners (Locked borders) */
+        .cell.past-winner {
+            box-shadow: inset 0 0 0 4px #d32f2f; /* Red border for finished quarters */
+            z-index: 4;
         }
         
-        .cell.taken {
-            background: #e8f5e9; /* Light green */
-            color: var(--secondary);
+        /* Optional: Add a small badge to past winners */
+        .cell.past-winner::after {
+            content: '★';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 10px;
+            color: #d32f2f;
         }
 
-        /* The specific winning border */
-        .cell.winner {
-            z-index: 10;
-            border: 4px solid var(--winner-border) !important;
-            background-color: #fff9c4 !important; /* Light yellow bg */
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        }
-
-        .team-logo { width: 30px; height: 30px; object-fit: contain; }
-
-        /* --- GAME DASHBOARD --- */
-        .scoreboard {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 40px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .team-score-block { text-align: center; }
-        .big-score { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
-        .score-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
-
+        /* --- UTILS --- */
+        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-danger { background: #d32f2f; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
         .hidden { display: none !important; }
+        
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:100; }
+        .modal-content { background:white; padding:30px; border-radius:8px; width:300px; text-align:center; }
+        .modal-content input { width:90%; padding:10px; margin:10px 0; border:1px solid #ccc; }
+
     </style>
 </head>
 <body>
 
-    <div id="modal" class="modal-overlay hidden">
-        <div class="modal-box">
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
             <h3>Add Player</h3>
-            <input type="text" id="p-name" placeholder="Full Name">
-            <input type="text" id="p-init" placeholder="Initials (e.g. JD)" maxlength="3">
-            <div style="margin-top: 15px;">
-                <button class="btn btn-action" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-action btn-primary" onclick="confirmAddPlayer()">Add</button>
-            </div>
+            <input type="text" id="new-name" placeholder="Name">
+            <input type="text" id="new-init" placeholder="Initials (e.g. JD)" maxlength="3">
+            <br><br>
+            <button class="btn btn-primary" onclick="addPlayer()">Save</button>
+            <button class="btn" onclick="closeModal()">Cancel</button>
         </div>
     </div>
 
-    <div class="app-container">
+    <div class="sidebar">
+        <h2>🏈 Squares App</h2>
         
-        <div class="sidebar">
-            <h2>Players</h2>
-            <button class="btn btn-primary" onclick="openModal()">+ Add Player</button>
-            <div id="player-list-container" class="player-list">
-                <div style="color:#888; text-align:center; font-style:italic; margin-top:20px;">No players yet</div>
+        <div id="setup-controls">
+            <button id="btn-add-player" class="btn btn-primary" style="width:100%" onclick="openModal()">+ Add Player</button>
+            <p style="font-size:0.9rem; color:#666; margin-top:10px;">Select a player below, then click squares.</p>
+        </div>
+
+        <div id="player-list" class="player-list">
             </div>
 
-            <hr style="width:100%; border:0; border-top:1px solid #ddd; margin: 20px 0;">
-            
-            <div id="setup-controls">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">Top Team</label>
-                <select id="team-top" style="width:100%; padding:5px; margin-bottom:15px;"></select>
+        <div style="margin-top:20px; border-top:1px solid #ddd; padding-top:20px;">
+            <div id="team-selects">
+                <label><strong>Top Team:</strong></label>
+                <select id="sel-top" style="width:100%; padding:8px; margin-bottom:10px;"></select>
                 
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">Left Team</label>
-                <select id="team-left" style="width:100%; padding:5px; margin-bottom:15px;"></select>
+                <label><strong>Left Team:</strong></label>
+                <select id="sel-left" style="width:100%; padding:8px; margin-bottom:10px;"></select>
                 
-                <p id="total-squares" style="text-align:center; font-weight:bold; color:var(--secondary);">0 / 100 Filled</p>
-                <button class="btn btn-primary" onclick="startGame()">Start Game</button>
+                <p id="square-count">0 / 100 Squares Filled</p>
+                <button class="btn btn-primary" style="width:100%; font-size:1.1rem;" onclick="startGame()">START GAME</button>
             </div>
 
             <div id="game-controls" class="hidden">
-                <button class="btn btn-primary" onclick="endQuarter()">End Quarter</button>
-                <div id="quarter-log" style="margin-top:20px; font-size:0.85rem; height: 150px; overflow-y:auto; border-top:1px solid #eee; padding-top:10px;">
-                    <strong>Quarter Log:</strong>
-                    <ul id="log-list" style="padding-left:20px; margin:5px 0;"></ul>
+                <button class="btn btn-danger" style="width:100%; margin-bottom:10px;" onclick="endQuarter()">End Quarter</button>
+                <div style="font-size:0.85rem; height:150px; overflow-y:auto; background:#f5f5f5; padding:5px; border:1px solid #ccc;">
+                    <strong>History:</strong>
+                    <ul id="game-log" style="padding-left:20px; margin:5px 0;"></ul>
                 </div>
             </div>
-        </div>
-
-        <div class="main-content">
-            
-            <div id="setup-header">
-                <h1>🏈 Setup Board</h1>
-                <p>Select a player on the left, then click squares to assign.</p>
-            </div>
-
-            <div id="game-scoreboard" class="scoreboard hidden">
-                <div class="team-score-block">
-                    <img id="sb-logo-1" class="team-logo" style="width:50px; height:50px;">
-                    <h3 id="sb-name-1">Team 1</h3>
-                    <div id="score-1" class="big-score">0</div>
-                    <div class="score-controls">
-                        <button class="btn btn-action" onclick="updateScore(1, 6)">+6</button>
-                        <button class="btn btn-action" onclick="updateScore(1, 1)">+1</button>
-                        <button class="btn btn-action" onclick="updateScore(1, 3)">+3</button>
-                        <button class="btn btn-action btn-danger" onclick="updateScore(1, -1)">-1</button>
-                    </div>
-                </div>
-                <div style="font-size: 1.5rem; font-weight:bold; color:#ccc;">VS</div>
-                <div class="team-score-block">
-                    <img id="sb-logo-2" class="team-logo" style="width:50px; height:50px;">
-                    <h3 id="sb-name-2">Team 2</h3>
-                    <div id="score-2" class="big-score">0</div>
-                    <div class="score-controls">
-                        <button class="btn btn-action" onclick="updateScore(2, 6)">+6</button>
-                        <button class="btn btn-action" onclick="updateScore(2, 1)">+1</button>
-                        <button class="btn btn-action" onclick="updateScore(2, 3)">+3</button>
-                        <button class="btn btn-action btn-danger" onclick="updateScore(2, -1)">-1</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="grid-container" class="grid-wrapper">
-                </div>
-
         </div>
     </div>
 
+    <div class="main-content">
+        
+        <div id="scoreboard" class="scoreboard hidden">
+            <div class="team-display">
+                <div style="text-align:center;">
+                    <h2 id="sb-name-top" style="margin:0;">Team 1</h2>
+                    <div class="controls">
+                        <button class="btn btn-sm btn-primary" onclick="score(1, 6)">+6</button>
+                        <button class="btn btn-sm btn-primary" onclick="score(1, 1)">+1</button>
+                        <button class="btn btn-sm btn-primary" onclick="score(1, 3)">+3</button>
+                        <button class="btn btn-sm btn-danger" onclick="score(1, -1)">-1</button>
+                    </div>
+                </div>
+                <div id="score-top" class="score-big" style="color:#1976d2">0</div>
+            </div>
+
+            <div style="font-size:2rem; color:#ccc;">VS</div>
+
+            <div class="team-display" style="justify-content: flex-end;">
+                <div id="score-left" class="score-big" style="color:#d32f2f">0</div>
+                <div style="text-align:center;">
+                    <h2 id="sb-name-left" style="margin:0;">Team 2</h2>
+                    <div class="controls">
+                        <button class="btn btn-sm btn-primary" onclick="score(2, 6)">+6</button>
+                        <button class="btn btn-sm btn-primary" onclick="score(2, 1)">+1</button>
+                        <button class="btn btn-sm btn-primary" onclick="score(2, 3)">+3</button>
+                        <button class="btn btn-sm btn-danger" onclick="score(2, -1)">-1</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-area">
+            <div id="lbl-top" class="grid-label-top"></div>
+            <div id="lbl-left" class="grid-label-left"></div>
+            <div id="grid" class="grid-container">
+                </div>
+        </div>
+
+    </div>
+
 <script>
-    // --- DATA ---
-    const NFL_TEAMS = [
-        { abbr: 'ARI', name: 'Cardinals' }, { abbr: 'ATL', name: 'Falcons' },
-        { abbr: 'BAL', name: 'Ravens' }, { abbr: 'BUF', name: 'Bills' },
-        { abbr: 'CAR', name: 'Panthers' }, { abbr: 'CHI', name: 'Bears' },
-        { abbr: 'CIN', name: 'Bengals' }, { abbr: 'CLE', name: 'Browns' },
-        { abbr: 'DAL', name: 'Cowboys' }, { abbr: 'DEN', name: 'Broncos' },
-        { abbr: 'DET', name: 'Lions' }, { abbr: 'GB', name: 'Packers' },
-        { abbr: 'HOU', name: 'Texans' }, { abbr: 'IND', name: 'Colts' },
-        { abbr: 'JAX', name: 'Jaguars' }, { abbr: 'KC', name: 'Chiefs' },
-        { abbr: 'LV', name: 'Raiders' }, { abbr: 'LAC', name: 'Chargers' },
-        { abbr: 'LAR', name: 'Rams' }, { abbr: 'MIA', name: 'Dolphins' },
-        { abbr: 'MIN', name: 'Vikings' }, { abbr: 'NE', name: 'Patriots' },
-        { abbr: 'NO', name: 'Saints' }, { abbr: 'NYG', name: 'Giants' },
-        { abbr: 'NYJ', name: 'Jets' }, { abbr: 'PHI', name: 'Eagles' },
-        { abbr: 'PIT', name: 'Steelers' }, { abbr: 'SF', name: '49ers' },
-        { abbr: 'SEA', name: 'Seahawks' }, { abbr: 'TB', name: 'Buccaneers' },
-        { abbr: 'TEN', name: 'Titans' }, { abbr: 'WAS', name: 'Commanders' }
+    // --- NFL DATA (Accurate Hex Colors) ---
+    const TEAMS = [
+        { name: "Arizona Cardinals", color: "#97233F" },
+        { name: "Atlanta Falcons", color: "#A71930" },
+        { name: "Baltimore Ravens", color: "#241773" },
+        { name: "Buffalo Bills", color: "#00338D" },
+        { name: "Carolina Panthers", color: "#0085CA" },
+        { name: "Chicago Bears", color: "#0B162A" },
+        { name: "Cincinnati Bengals", color: "#FB4F14" },
+        { name: "Cleveland Browns", color: "#311D00" },
+        { name: "Dallas Cowboys", color: "#003594" },
+        { name: "Denver Broncos", color: "#FB4F14" },
+        { name: "Detroit Lions", color: "#0076B6" },
+        { name: "Green Bay Packers", color: "#203731" },
+        { name: "Houston Texans", color: "#03202F" },
+        { name: "Indianapolis Colts", color: "#002C5F" },
+        { name: "Jacksonville Jaguars", color: "#006778" },
+        { name: "Kansas City Chiefs", color: "#E31837" },
+        { name: "Las Vegas Raiders", color: "#000000" },
+        { name: "L.A. Chargers", color: "#0080C6" },
+        { name: "L.A. Rams", color: "#003594" },
+        { name: "Miami Dolphins", color: "#008E97" },
+        { name: "Minnesota Vikings", color: "#4F2683" },
+        { name: "New England Patriots", color: "#002244" },
+        { name: "New Orleans Saints", color: "#D3BC8D" },
+        { name: "New York Giants", color: "#0B2265" },
+        { name: "New York Jets", color: "#125740" },
+        { name: "Philadelphia Eagles", color: "#004C54" },
+        { name: "Pittsburgh Steelers", color: "#FFB612" },
+        { name: "San Francisco 49ers", color: "#AA0000" },
+        { name: "Seattle Seahawks", color: "#002244" },
+        { name: "Tampa Bay Buccaneers", color: "#D50A0A" },
+        { name: "Tennessee Titans", color: "#0C2340" },
+        { name: "Washington Commanders", color: "#5A1414" }
     ];
 
+    // --- STATE ---
     let players = [];
-    let activePlayerId = null;
-    let gridData = Array(100).fill(null);
+    let activePlayerIdx = null;
+    let gridOwners = Array(100).fill(null);
     let topNums = Array(10).fill('?');
     let leftNums = Array(10).fill('?');
-    let teamTop = null;
-    let teamLeft = null;
-    let score1 = 0; // Top Team
-    let score2 = 0; // Left Team
-    let gameActive = false;
+    let gameStarted = false;
+    let scoreT = 0, scoreL = 0;
+    let teamT = null, teamL = null;
     let quarter = 1;
+    let pastWinners = []; // Store indices of boxes that won quarters
 
     // --- INIT ---
     window.onload = () => {
-        const t1 = document.getElementById('team-top');
-        const t2 = document.getElementById('team-left');
-        NFL_TEAMS.forEach(t => {
-            const opt = `<option value="${t.abbr}">${t.name}</option>`;
-            t1.innerHTML += opt;
-            t2.innerHTML += opt;
+        const sT = document.getElementById('sel-top');
+        const sL = document.getElementById('sel-left');
+        TEAMS.forEach((t, i) => {
+            sT.add(new Option(t.name, i));
+            sL.add(new Option(t.name, i));
         });
-        t2.selectedIndex = 1;
+        sL.selectedIndex = 1; // Different default
         renderGrid();
     };
 
-    // --- PLAYER MANAGEMENT ---
+    // --- PLAYERS ---
     function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-    function closeModal() { 
-        document.getElementById('modal').classList.add('hidden'); 
-        document.getElementById('p-name').value = '';
-        document.getElementById('p-init').value = '';
-    }
-
-    function confirmAddPlayer() {
-        const name = document.getElementById('p-name').value.trim();
-        const init = document.getElementById('p-init').value.trim().toUpperCase();
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    
+    function addPlayer() {
+        const name = document.getElementById('new-name').value.trim();
+        const init = document.getElementById('new-init').value.trim().toUpperCase();
+        if(!name || !init) return alert("Enter Name and Initials");
         
-        if(!name || !init) return alert("Please enter Name and Initials");
+        players.push({ name, init, count: 0 });
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-init').value = '';
+        activePlayerIdx = players.length - 1;
         
-        const newPlayer = {
-            id: Date.now(),
-            name: name,
-            initials: init,
-            count: 0
-        };
-        
-        players.push(newPlayer);
-        activePlayerId = newPlayer.id; // Auto select new player
         closeModal();
-        renderPlayerList();
+        renderPlayers();
     }
 
-    function renderPlayerList() {
-        const container = document.getElementById('player-list-container');
-        if(players.length === 0) {
-            container.innerHTML = '<div style="color:#888; text-align:center; margin-top:20px;">No players yet</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        players.forEach(p => {
+    function renderPlayers() {
+        const list = document.getElementById('player-list');
+        list.innerHTML = '';
+        players.forEach((p, i) => {
             const div = document.createElement('div');
-            div.className = `player-item ${activePlayerId === p.id ? 'active' : ''}`;
-            div.innerHTML = `
-                <span>${p.initials} - ${p.name}</span>
-                <span class="player-count">${p.count}</span>
-            `;
-            div.onclick = () => {
-                activePlayerId = p.id;
-                renderPlayerList();
-            };
-            container.appendChild(div);
+            div.className = `player-item ${i === activePlayerIdx ? 'active' : ''}`;
+            div.innerHTML = `<span>${p.init} - ${p.name}</span> <span style="background:#ddd; padding:2px 6px; border-radius:10px; font-size:0.8rem;">${p.count}</span>`;
+            if(!gameStarted) {
+                div.onclick = () => { activePlayerIdx = i; renderPlayers(); };
+            } else {
+                div.style.cursor = 'default';
+                div.style.opacity = '0.7';
+            }
+            list.appendChild(div);
         });
     }
 
     // --- GRID LOGIC ---
     function renderGrid() {
-        const grid = document.getElementById('grid-container');
+        const grid = document.getElementById('grid');
         grid.innerHTML = '';
 
-        // Corner Cell
-        grid.innerHTML += `<div class="cell header" style="background:#222; font-size:0.8rem;">Q${gameActive ? quarter : '?'}</div>`;
+        // 1. Corner (Top-Left)
+        const corner = document.createElement('div');
+        corner.className = 'cell header';
+        corner.style.background = '#222';
+        corner.textContent = gameStarted ? `Q${quarter}` : '';
+        grid.appendChild(corner);
 
-        // Top Header
-        topNums.forEach((n, i) => {
+        // 2. Top Headers (Numbers)
+        topNums.forEach(n => {
             const div = document.createElement('div');
             div.className = 'cell header';
-            div.innerText = n;
-            div.id = `th-${i}`;
-            // Optional: Add team logo if game started
-            if(gameActive) div.style.borderTop = "4px solid var(--secondary)";
+            div.textContent = n;
+            if(gameStarted) div.style.backgroundColor = teamT.color;
+            else div.style.backgroundColor = '#666';
             grid.appendChild(div);
         });
 
-        // Rows
+        // 3. Rows
         for(let r=0; r<10; r++) {
             // Left Header
-            const lh = document.createElement('div');
-            lh.className = 'cell header';
-            lh.innerText = leftNums[r];
-            lh.id = `lh-${r}`;
-            if(gameActive) lh.style.borderLeft = "4px solid var(--secondary)";
-            grid.appendChild(lh);
+            const leftHead = document.createElement('div');
+            leftHead.className = 'cell header';
+            leftHead.textContent = leftNums[r];
+            if(gameStarted) leftHead.style.backgroundColor = teamL.color;
+            else leftHead.style.backgroundColor = '#666';
+            grid.appendChild(leftHead);
 
             // Cells
             for(let c=0; c<10; c++) {
                 const idx = r * 10 + c;
-                const owner = gridData[idx];
+                const owner = gridOwners[idx];
                 const div = document.createElement('div');
-                div.className = `cell ${owner ? 'taken' : ''}`;
-                div.id = `cell-${r}-${c}`;
-                div.innerText = owner ? owner.initials : '';
+                div.className = 'cell';
+                div.textContent = owner ? owner.init : '';
+                div.id = `c-${r}-${c}`;
                 
-                if(!gameActive) {
-                    div.onclick = () => handleSquareClick(idx);
+                // Past Winner Logic
+                if(pastWinners.includes(idx)) {
+                    div.classList.add('past-winner');
+                }
+
+                if(!gameStarted) {
+                    div.onclick = () => toggleSquare(idx);
                 }
                 
                 grid.appendChild(div);
             }
         }
         
-        updateTotalCount();
+        document.getElementById('square-count').textContent = `${gridOwners.filter(x=>x).length} / 100 Squares Filled`;
     }
 
-    function handleSquareClick(idx) {
-        if(!activePlayerId) return alert("Please select a player from the list first.");
-        
-        const currentPlayer = players.find(p => p.id === activePlayerId);
-        
-        // Toggle logic
-        if(gridData[idx] && gridData[idx].id === activePlayerId) {
-            // Remove
-            gridData[idx] = null;
-            currentPlayer.count--;
-        } else if (gridData[idx]) {
-            // Taken by someone else
+    function toggleSquare(idx) {
+        if(activePlayerIdx === null) return alert("Add and select a player first.");
+        const p = players[activePlayerIdx];
+
+        if(gridOwners[idx] === p) {
+            gridOwners[idx] = null;
+            p.count--;
+        } else if(gridOwners[idx] === null) {
+            gridOwners[idx] = p;
+            p.count++;
+        } else {
             alert("Square taken!");
             return;
-        } else {
-            // Take
-            gridData[idx] = currentPlayer;
-            currentPlayer.count++;
         }
-        
-        renderGrid(); // Re-render grid to show change
-        renderPlayerList(); // Update counts
-    }
-
-    function updateTotalCount() {
-        const total = gridData.filter(x => x).length;
-        document.getElementById('total-squares').innerText = `${total} / 100 Filled`;
+        renderGrid();
+        renderPlayers();
     }
 
     // --- GAME LOGIC ---
     function startGame() {
-        const filled = gridData.filter(x => x).length;
-        if(filled < 100 && !confirm("Grid not full. Start anyway?")) return;
+        const filled = gridOwners.filter(x=>x).length;
+        if(filled < 100 && !confirm("Grid isn't full. Start anyway?")) return;
 
-        // Set Teams
-        const t1Val = document.getElementById('team-top').value;
-        const t2Val = document.getElementById('team-left').value;
-        teamTop = NFL_TEAMS.find(t => t.abbr === t1Val);
-        teamLeft = NFL_TEAMS.find(t => t.abbr === t2Val);
-
-        // Randomize Numbers
-        topNums = [0,1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
-        leftNums = [0,1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
-
-        gameActive = true;
-
-        // UI Updates
-        document.getElementById('setup-controls').classList.add('hidden');
-        document.getElementById('game-controls').classList.remove('hidden');
-        document.getElementById('setup-header').classList.add('hidden');
-        document.getElementById('game-scoreboard').classList.remove('hidden');
-
-        // Populate Scoreboard
-        document.getElementById('sb-name-1').innerText = teamTop.name;
-        document.getElementById('sb-logo-1').src = `https://a.espncdn.com/i/teamlogos/nfl/500/${teamTop.abbr}.png`;
+        // Lock Data
+        teamT = TEAMS[document.getElementById('sel-top').value];
+        teamL = TEAMS[document.getElementById('sel-left').value];
         
-        document.getElementById('sb-name-2').innerText = teamLeft.name;
-        document.getElementById('sb-logo-2').src = `https://a.espncdn.com/i/teamlogos/nfl/500/${teamLeft.abbr}.png`;
+        // Randomize
+        topNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+        leftNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+        
+        gameStarted = true;
+
+        // UI Transition
+        document.getElementById('setup-controls').classList.add('hidden');
+        document.getElementById('team-selects').classList.add('hidden');
+        document.getElementById('game-controls').classList.remove('hidden');
+        document.getElementById('scoreboard').classList.remove('hidden');
+
+        // Set Labels & Colors
+        document.getElementById('lbl-top').textContent = teamT.name;
+        document.getElementById('lbl-top').style.color = teamT.color;
+        document.getElementById('sb-name-top').textContent = teamT.name;
+        document.getElementById('score-top').style.color = teamT.color;
+
+        document.getElementById('lbl-left').textContent = teamL.name;
+        document.getElementById('lbl-left').style.color = teamL.color;
+        document.getElementById('sb-name-left').textContent = teamL.name;
+        document.getElementById('score-left').style.color = teamL.color;
 
         renderGrid();
-        checkWinner(); // Run once to highlight 0-0
+        renderPlayers(); // Locks UI
+        highlightWinner();
     }
 
-    function updateScore(team, amount) {
-        if(team === 1) score1 = Math.max(0, score1 + amount);
-        else score2 = Math.max(0, score2 + amount);
+    function score(team, val) {
+        if(team===1) scoreT = Math.max(0, scoreT + val);
+        else scoreL = Math.max(0, scoreL + val);
 
-        document.getElementById('score-1').innerText = score1;
-        document.getElementById('score-2').innerText = score2;
-
-        checkWinner();
+        document.getElementById('score-top').textContent = scoreT;
+        document.getElementById('score-left').textContent = scoreL;
+        highlightWinner();
     }
 
-    function checkWinner() {
-        // Remove old highlights
-        document.querySelectorAll('.winner').forEach(el => el.classList.remove('winner'));
-        document.querySelectorAll('.header').forEach(el => el.style.background = 'var(--secondary)');
-        document.querySelectorAll('.header').forEach(el => el.style.color = 'white');
+    function highlightWinner() {
+        // Remove current winner highlight (keep past winners)
+        document.querySelectorAll('.current-winner').forEach(e => e.classList.remove('current-winner'));
 
-        // Calc indices
-        const topDigit = score1 % 10;
-        const leftDigit = score2 % 10;
-        
-        const colIdx = topNums.indexOf(topDigit);
-        const rowIdx = leftNums.indexOf(leftDigit);
+        const digitT = scoreT % 10;
+        const digitL = scoreL % 10;
 
-        // Highlight Headers
-        const th = document.getElementById(`th-${colIdx}`);
-        const lh = document.getElementById(`lh-${rowIdx}`);
-        
-        th.style.background = 'var(--winner-border)';
-        th.style.color = 'black';
-        
-        lh.style.background = 'var(--winner-border)';
-        lh.style.color = 'black';
+        const col = topNums.indexOf(digitT);
+        const row = leftNums.indexOf(digitL);
 
-        // Highlight Cell (Thick Border)
-        const cell = document.getElementById(`cell-${rowIdx}-${colIdx}`);
-        cell.classList.add('winner');
+        const cell = document.getElementById(`c-${row}-${col}`);
+        if(cell) cell.classList.add('current-winner');
     }
 
     function endQuarter() {
-        const topDigit = score1 % 10;
-        const leftDigit = score2 % 10;
-        const colIdx = topNums.indexOf(topDigit);
-        const rowIdx = leftNums.indexOf(leftDigit);
-        
-        const winner = gridData[rowIdx * 10 + colIdx];
-        const winnerName = winner ? `${winner.name} (${winner.initials})` : "Unclaimed";
+        const digitT = scoreT % 10;
+        const digitL = scoreL % 10;
+        const col = topNums.indexOf(digitT);
+        const row = leftNums.indexOf(digitL);
+        const idx = row * 10 + col;
 
-        const log = document.getElementById('log-list');
+        // 1. Add to permanent winners
+        pastWinners.push(idx);
+
+        // 2. Log it
+        const winner = gridOwners[idx];
+        const log = document.getElementById('game-log');
         const li = document.createElement('li');
-        li.innerHTML = `Q${quarter}: ${teamTop.abbr} ${score1} - ${teamLeft.abbr} ${score2} &rarr; <strong>${winnerName}</strong>`;
+        li.innerHTML = `<strong>Q${quarter}:</strong> ${teamT.name} ${scoreT} - ${teamL.name} ${scoreL} <br> Winner: ${winner ? winner.init : 'Empty'}`;
         log.appendChild(li);
 
+        // 3. Advance
         quarter++;
-        renderGrid(); // update corner Q label
+        renderGrid(); // Re-renders grid, applying .past-winner class
+        highlightWinner(); // Re-apply current winner highlight on top
     }
 
 </script>

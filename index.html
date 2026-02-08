@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Randomized Squares</title>
+    <title>Football Squares Pro</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --bg-color: #f4f4f9;
             --text-color: #333;
             --cell-size: 65px; 
             --winner-border: #ffd700;
+            --primary: #1976d2;
         }
 
         body {
@@ -24,7 +26,7 @@
 
         /* --- SIDEBAR --- */
         .sidebar {
-            width: 320px;
+            width: 340px;
             background: white;
             border-right: 1px solid #ddd;
             display: flex;
@@ -44,21 +46,15 @@
         }
 
         .player-item {
-            padding: 10px;
+            padding: 12px;
             border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
-        
-        /* Delete button for players before game starts */
-        .del-btn {
-            color: #d32f2f;
-            cursor: pointer;
-            font-weight: bold;
-            padding: 0 5px;
-        }
+
+        .del-btn { color: #d32f2f; cursor: pointer; font-weight: bold; padding: 5px 10px; }
         .del-btn:hover { background: #ffebee; border-radius: 4px; }
 
         /* --- MAIN AREA --- */
@@ -74,7 +70,8 @@
         /* --- SCOREBOARD --- */
         .scoreboard {
             background: white;
-            width: 95%;
+            width: 90%;
+            max-width: 900px;
             padding: 15px 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -84,17 +81,26 @@
             margin-bottom: 25px;
         }
         
-        .team-display { display: flex; align-items: center; gap: 15px; min-width: 300px; }
+        .team-display { display: flex; align-items: center; gap: 15px; min-width: 250px; }
         .score-big { font-size: 3.5rem; font-weight: 800; font-family: monospace; line-height: 1; }
         .controls { display: flex; gap: 5px; margin-top: 5px; }
 
         /* --- GRID LAYOUT --- */
+        /* Wrapper for Capture */
+        #capture-target {
+            background: var(--bg-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         .grid-area {
             display: grid;
             grid-template-columns: 60px auto; 
             grid-template-rows: 60px auto;    
             gap: 0;
-            margin-bottom: 50px;
+            margin-bottom: 20px;
         }
 
         .grid-label-top {
@@ -129,7 +135,7 @@
             background: white;
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; font-size: 1.1rem;
-            color: black; /* Initials always black */
+            color: black;
             position: relative;
         }
 
@@ -138,29 +144,54 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* Border Logic */
-        .cell.current-winner {
-            z-index: 10;
-            box-shadow: inset 0 0 0 6px var(--winner-border); 
+        .cell.current-winner { z-index: 10; box-shadow: inset 0 0 0 6px var(--winner-border); }
+        .cell.past-winner { box-shadow: inset 0 0 0 6px #d32f2f; }
+
+        /* --- EXPORT FOOTER (Hidden usually) --- */
+        #export-footer {
+            display: none; /* Only visible during capture */
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+            border-top: 3px solid #333;
+            padding-top: 20px;
         }
-        
-        .cell.past-winner {
-            box-shadow: inset 0 0 0 6px #d32f2f; 
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px;
+            background: white;
+            border-bottom: 1px solid #eee;
         }
 
         /* --- UTILS --- */
-        .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
+        .btn { padding: 12px 20px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; transition: 0.2s; }
         .btn:hover { opacity: 0.9; }
-        .btn-primary { background: #1976d2; color: white; }
+        .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: #d32f2f; color: white; }
         .btn-success { background: #2e7d32; color: white; }
+        .btn-dark { background: #333; color: white; }
         .btn-outline { background: transparent; border: 2px solid #666; color: #666; }
-        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
         
         .hidden { display: none !important; }
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:100; backdrop-filter: blur(2px); }
-        .modal-content { background:white; padding:30px; border-radius:8px; width:300px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-content input { width:90%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius: 4px; }
+        
+        /* Modal & Input Styles */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:100; backdrop-filter: blur(4px); }
+        .modal-content { background:white; padding:40px; border-radius:12px; width:400px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        
+        /* Larger Inputs */
+        .modal-content input { 
+            width:90%; 
+            padding: 15px; 
+            margin: 15px 0; 
+            border: 2px solid #ccc; 
+            border-radius: 8px; 
+            font-size: 1.2rem; /* Bigger Font */
+        }
+        .modal-content input:focus { border-color: var(--primary); outline: none; }
 
     </style>
 </head>
@@ -168,7 +199,7 @@
 
     <div id="modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Add Player</h3>
+            <h2 style="margin-top:0">Add Player</h2>
             <input type="text" id="new-name" placeholder="Full Name">
             <input type="text" id="new-init" placeholder="Initials (e.g. JD)" maxlength="3">
             <br><br>
@@ -180,31 +211,34 @@
     </div>
 
     <div class="sidebar">
-        <h2 style="margin-top: 0; color: #1976d2;">🏈 Squares Randomizer</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; color: var(--primary);">🏈 Squares</h2>
+            <button class="btn-sm btn-outline" onclick="resetGame()">New Game</button>
+        </div>
+        <p style="font-size:0.8rem; color:#666; margin-bottom: 20px;">Game saves automatically.</p>
         
         <div id="setup-controls">
-            <button class="btn btn-primary" style="width:100%" onclick="openModal()">+ Add Player to List</button>
-            <p style="font-size:0.85rem; color:#666; text-align: center; margin-bottom: 5px;">
-                Players added here will be randomly assigned squares when you click Start.
-            </p>
+            <button class="btn btn-primary" style="width:100%" onclick="openModal()">+ Add Player</button>
         </div>
 
         <div id="player-list" class="player-list"></div>
 
-        <div style="margin-top:15px;">
+        <div style="margin-top:20px; border-top: 1px solid #eee; padding-top: 20px;">
             <div id="team-selects">
-                <label style="font-size: 0.85rem; font-weight: bold;">Top Team:</label>
-                <select id="sel-top" style="width:100%; padding:8px; margin-bottom:10px; border-radius:4px;"></select>
+                <label style="font-size: 0.9rem; font-weight: bold;">Top Team:</label>
+                <select id="sel-top" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; font-size:1rem;"></select>
                 
-                <label style="font-size: 0.85rem; font-weight: bold;">Left Team:</label>
-                <select id="sel-left" style="width:100%; padding:8px; margin-bottom:10px; border-radius:4px;"></select>
+                <label style="font-size: 0.9rem; font-weight: bold;">Left Team:</label>
+                <select id="sel-left" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px; font-size:1rem;"></select>
                 
-                <button class="btn btn-success" style="width:100%; padding: 12px; margin-top: 10px;" onclick="startGame()">START GAME & RANDOMIZE</button>
+                <button class="btn btn-success" style="width:100%; margin-top: 10px;" onclick="startGame()">START GAME</button>
             </div>
 
             <div id="game-controls" class="hidden">
+                <button class="btn btn-dark" style="width:100%; margin-bottom:10px;" onclick="exportBoard()">📸 Export Board (PNG)</button>
                 <button class="btn btn-danger" style="width:100%; margin-bottom:10px;" onclick="endQuarter()">End Quarter</button>
-                <div style="font-size:0.85rem; height:180px; overflow-y:auto; background:#f0f0f0; padding:10px; border:1px solid #ddd; border-radius: 4px;">
+                
+                <div style="font-size:0.85rem; height:150px; overflow-y:auto; background:#f0f0f0; padding:10px; border:1px solid #ddd; border-radius: 4px;">
                     <strong>Quarter Log:</strong>
                     <ul id="game-log" style="padding-left:20px; margin:5px 0;"></ul>
                 </div>
@@ -244,12 +278,24 @@
             </div>
         </div>
 
-        <div class="grid-area">
-            <div id="lbl-top" class="grid-label-top"></div>
-            <div id="lbl-left" class="grid-label-left"></div>
-            
-            <div id="grid" class="grid-container">
-                </div>
+        <div id="capture-target">
+            <div class="grid-area hidden" id="grid-wrapper">
+                <div id="lbl-top" class="grid-label-top"></div>
+                <div id="lbl-left" class="grid-label-left"></div>
+                <div id="grid" class="grid-container">
+                    </div>
+            </div>
+
+            <div id="export-footer">
+                <h3 style="text-align:center; margin:0 0 10px 0;">Quarter Breakdown</h3>
+                <div id="footer-content">
+                    </div>
+            </div>
+        </div>
+
+        <div id="setup-message" style="margin-top: 100px; color: #888; text-align:center;">
+            <h1>🏈 Setup Phase</h1>
+            <p>Add players on the left, select teams, and click Start.</p>
         </div>
 
     </div>
@@ -276,22 +322,26 @@
     ];
 
     // --- STATE ---
+    const STORAGE_KEY = 'squares_pro_save';
+    
     let state = {
         players: [],
-        gridOwners: Array(100).fill(null), 
-        topNums: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // Fixed Order
-        leftNums: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // Fixed Order
+        gridOwners: [], 
+        topNums: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        leftNums: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         gameStarted: false,
         scoreT: 0,
         scoreL: 0,
         teamTIdx: 0,
         teamLIdx: 1,
         quarter: 1,
-        pastWinners: []
+        pastWinners: [],
+        quarterLogs: [] // { q: 1, winner: 'JD', score: '7-0' }
     };
 
     // --- INIT ---
     window.onload = () => {
+        // Populate Selects
         const sT = document.getElementById('sel-top');
         const sL = document.getElementById('sel-left');
         TEAMS.forEach((t, i) => {
@@ -299,11 +349,61 @@
             sL.add(new Option(t.name, i));
         });
         sL.selectedIndex = 1; 
-        renderPlaceholderGrid();
+
+        // Load Auto-Save
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved) {
+            try {
+                state = JSON.parse(saved);
+                restoreGame();
+            } catch(e) { console.error("Save corrupted", e); }
+        }
+
+        renderPlayerList();
     };
 
+    function saveGame() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function resetGame() {
+        if(!confirm("Start a brand new game? All current data will be lost.")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+    }
+
+    function restoreGame() {
+        // Restore Inputs
+        document.getElementById('sel-top').selectedIndex = state.teamTIdx;
+        document.getElementById('sel-left').selectedIndex = state.teamLIdx;
+
+        // Restore UI State
+        if(state.gameStarted) {
+            document.getElementById('setup-controls').classList.add('hidden');
+            document.getElementById('team-selects').classList.add('hidden');
+            document.getElementById('setup-message').classList.add('hidden');
+            
+            document.getElementById('game-controls').classList.remove('hidden');
+            document.getElementById('scoreboard').classList.remove('hidden');
+            document.getElementById('grid-wrapper').classList.remove('hidden');
+            
+            updateTeamLabels();
+            renderActiveGrid();
+            highlightWinner();
+            
+            // Restore Logs
+            const logList = document.getElementById('game-log');
+            logList.innerHTML = '';
+            state.quarterLogs.forEach(log => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>Q${log.q}:</strong> ${log.score} &rarr; ${log.winner}`;
+                logList.appendChild(li);
+            });
+        }
+    }
+
     // --- PLAYERS ---
-    function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+    function openModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('new-name').focus(); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     
     function addPlayer() {
@@ -317,11 +417,13 @@
         
         closeModal();
         renderPlayerList();
+        saveGame();
     }
 
     function removePlayer(idx) {
         state.players.splice(idx, 1);
         renderPlayerList();
+        saveGame();
     }
 
     function renderPlayerList() {
@@ -331,14 +433,12 @@
             const div = document.createElement('div');
             div.className = 'player-item';
             
-            let content = `<span>${p.init} - ${p.name}</span>`;
+            let content = `<span><strong>${p.init}</strong> - ${p.name}</span>`;
             
             if(!state.gameStarted) {
-                // Show delete button if game hasn't started
                 content += `<span class="del-btn" onclick="removePlayer(${i})">&times;</span>`;
             } else {
-                // Show count if game started
-                content += `<span style="background:#eee; padding:2px 8px; border-radius:10px; font-weight:bold;">${p.squaresAssigned}</span>`;
+                content += `<span style="background:#eee; padding:5px 10px; border-radius:6px; font-weight:bold;">${p.squaresAssigned}</span>`;
             }
             
             div.innerHTML = content;
@@ -347,21 +447,6 @@
     }
 
     // --- GRID RENDERING ---
-    function renderPlaceholderGrid() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        
-        // Blank header
-        grid.appendChild(createCell('header', ''));
-        // Top 0-9
-        state.topNums.forEach(n => grid.appendChild(createCell('header', n, '#666')));
-        // Rows
-        state.leftNums.forEach(n => {
-            grid.appendChild(createCell('header', n, '#666'));
-            for(let c=0; c<10; c++) grid.appendChild(createCell('', ''));
-        });
-    }
-
     function createCell(type, text, bg) {
         const div = document.createElement('div');
         div.className = `cell ${type}`;
@@ -378,18 +463,15 @@
         const lColor = TEAMS[state.teamLIdx].color;
 
         // 1. Corner
-        const corner = createCell('header', `Q${state.quarter}`, '#222');
-        grid.appendChild(corner);
+        grid.appendChild(createCell('header', `Q${state.quarter > 4 ? 'OT' : state.quarter}`, '#222'));
 
-        // 2. Top Headers (Fixed Order)
+        // 2. Top Headers
         state.topNums.forEach(n => grid.appendChild(createCell('header', n, tColor)));
 
         // 3. Rows
         for(let r=0; r<10; r++) {
-            // Left Header (Fixed Order)
             grid.appendChild(createCell('header', state.leftNums[r], lColor));
 
-            // Cells
             for(let c=0; c<10; c++) {
                 const idx = r * 10 + c;
                 const ownerIdx = state.gridOwners[idx];
@@ -400,8 +482,7 @@
                 if(ownerIdx !== null && ownerIdx !== 'OPEN') {
                     div.textContent = state.players[ownerIdx].init;
                 } else if (ownerIdx === 'OPEN') {
-                    div.textContent = '';
-                    div.style.background = '#eee'; // Visually distinct for empty
+                    div.style.background = '#eee';
                 }
 
                 if(state.pastWinners.includes(idx)) {
@@ -416,32 +497,24 @@
     // --- GAME LOGIC ---
     function startGame() {
         if(state.players.length === 0) return alert("Add players first!");
-        if(!confirm("Start Game? This will randomize squares and lock the player list.")) return;
+        if(!confirm("Start Game? This locks the player list.")) return;
 
         state.teamTIdx = document.getElementById('sel-top').selectedIndex;
         state.teamLIdx = document.getElementById('sel-left').selectedIndex;
         
-        // --- RANDOMIZATION ALGORITHM ---
+        // Randomization
         const totalSquares = 100;
         const numPlayers = state.players.length;
         const squaresPerPlayer = Math.floor(totalSquares / numPlayers);
         
         let pool = [];
-        
-        // Add fair share for everyone
         state.players.forEach((p, idx) => {
             p.squaresAssigned = squaresPerPlayer;
-            for(let i=0; i<squaresPerPlayer; i++) {
-                pool.push(idx);
-            }
+            for(let i=0; i<squaresPerPlayer; i++) pool.push(idx);
         });
+        while(pool.length < 100) pool.push('OPEN');
 
-        // Fill remainder with "OPEN" (null or special flag)
-        while(pool.length < 100) {
-            pool.push('OPEN');
-        }
-
-        // Shuffle Pool (Fisher-Yates)
+        // Shuffle
         for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -453,13 +526,17 @@
         // UI Transition
         document.getElementById('setup-controls').classList.add('hidden');
         document.getElementById('team-selects').classList.add('hidden');
+        document.getElementById('setup-message').classList.add('hidden');
+        
         document.getElementById('game-controls').classList.remove('hidden');
         document.getElementById('scoreboard').classList.remove('hidden');
+        document.getElementById('grid-wrapper').classList.remove('hidden');
 
         updateTeamLabels();
         renderActiveGrid();
-        renderPlayerList(); // Shows counts now
+        renderPlayerList();
         highlightWinner();
+        saveGame();
     }
 
     function updateTeamLabels() {
@@ -486,50 +563,77 @@
         else state.scoreL = Math.max(0, state.scoreL + val);
         updateTeamLabels();
         highlightWinner();
+        saveGame();
     }
 
     function highlightWinner() {
         document.querySelectorAll('.current-winner').forEach(e => e.classList.remove('current-winner'));
-
-        const digitT = state.scoreT % 10;
-        const digitL = state.scoreL % 10;
-        
-        // Since nums are fixed 0-9, the index IS the digit
-        const col = digitT;
-        const row = digitL;
-
+        const col = state.scoreT % 10;
+        const row = state.scoreL % 10;
         const cell = document.getElementById(`c-${row}-${col}`);
         if(cell) cell.classList.add('current-winner');
     }
 
     function endQuarter() {
-        const digitT = state.scoreT % 10;
-        const digitL = state.scoreL % 10;
-        const col = digitT;
-        const row = digitL;
+        const col = state.scoreT % 10;
+        const row = state.scoreL % 10;
         const idx = row * 10 + col;
 
         state.pastWinners.push(idx);
 
-        // Log
         const ownerIdx = state.gridOwners[idx];
-        let winnerName = "OPEN / NO ONE";
-        if(ownerIdx !== 'OPEN') {
-            winnerName = `${state.players[ownerIdx].name} (${state.players[ownerIdx].init})`;
-        }
+        let winnerName = "OPEN";
+        if(ownerIdx !== 'OPEN') winnerName = `${state.players[ownerIdx].name}`;
         
-        const teamT = TEAMS[state.teamTIdx];
-        const teamL = TEAMS[state.teamLIdx];
-        
-        const logMsg = `<strong>Q${state.quarter}:</strong> ${teamT.name} ${state.scoreT} - ${teamL.name} ${state.scoreL} <br> Winner: ${winnerName}`;
+        const logData = {
+            q: state.quarter,
+            score: `${TEAMS[state.teamTIdx].name} ${state.scoreT} - ${TEAMS[state.teamLIdx].name} ${state.scoreL}`,
+            winner: winnerName
+        };
+        state.quarterLogs.push(logData);
         
         const li = document.createElement('li');
-        li.innerHTML = logMsg;
+        li.innerHTML = `<strong>Q${logData.q}:</strong> ${logData.score} &rarr; ${logData.winner}`;
         document.getElementById('game-log').appendChild(li);
 
         state.quarter++;
         renderActiveGrid(); 
         highlightWinner();
+        saveGame();
+    }
+
+    // --- EXPORT TO PNG ---
+    function exportBoard() {
+        const target = document.getElementById('capture-target');
+        const footer = document.getElementById('export-footer');
+        const footerContent = document.getElementById('footer-content');
+        
+        // 1. Populate Footer
+        footerContent.innerHTML = '';
+        if(state.quarterLogs.length === 0) {
+            footerContent.innerHTML = '<div style="padding:10px; text-align:center;">Game in Progress - No Quarters Finished</div>';
+        } else {
+            state.quarterLogs.forEach(log => {
+                const row = document.createElement('div');
+                row.className = 'footer-row';
+                row.innerHTML = `<span>Q${log.q} Winner: ${log.winner}</span> <span>${log.score}</span>`;
+                footerContent.appendChild(row);
+            });
+        }
+
+        // 2. Show footer for capture
+        footer.style.display = 'block';
+
+        // 3. Capture
+        html2canvas(target, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `FootballSquares_Q${state.quarter}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            // 4. Hide footer again
+            footer.style.display = 'none';
+        });
     }
 
 </script>

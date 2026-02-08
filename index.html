@@ -9,8 +9,8 @@
             --bg-color: #f4f4f9;
             --text-color: #333;
             --border-color: #ccc;
-            --cell-size: 65px; /* Bigger grid cells */
-            --winner-border: #ffd700; /* Gold */
+            --cell-size: 65px; 
+            --winner-border: #ffd700;
         }
 
         body {
@@ -23,9 +23,9 @@
             overflow: hidden;
         }
 
-        /* --- SIDEBAR (Player List) --- */
+        /* --- SIDEBAR --- */
         .sidebar {
-            width: 300px;
+            width: 320px;
             background: white;
             border-right: 1px solid #ddd;
             display: flex;
@@ -41,17 +41,25 @@
             margin-top: 10px;
             border: 1px solid #eee;
             border-radius: 4px;
+            background: #fff;
         }
 
         .player-item {
-            padding: 12px;
+            padding: 10px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
+            font-size: 0.9rem;
         }
         .player-item:hover { background: #f9f9f9; }
-        .player-item.active { background: #e3f2fd; font-weight: bold; }
+        .player-item.active { background: #e3f2fd; font-weight: bold; border-left: 4px solid #1976d2; }
+
+        .data-controls {
+            margin-top: auto; /* Push to bottom */
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+        }
 
         /* --- MAIN AREA --- */
         .main-content {
@@ -66,7 +74,7 @@
         /* --- SCOREBOARD --- */
         .scoreboard {
             background: white;
-            width: 95%; /* Longer sideways */
+            width: 95%;
             padding: 15px 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -76,125 +84,83 @@
             margin-bottom: 25px;
         }
         
-        .team-display {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            min-width: 300px;
-        }
-        
-        .score-big {
-            font-size: 3.5rem;
-            font-weight: 800;
-            font-family: monospace;
-            line-height: 1;
-        }
+        .team-display { display: flex; align-items: center; gap: 15px; min-width: 300px; }
+        .score-big { font-size: 3.5rem; font-weight: 800; font-family: monospace; line-height: 1; }
+        .controls { display: flex; gap: 5px; margin-top: 5px; }
 
-        .controls {
-            display: flex;
-            gap: 5px;
-        }
-
-        /* --- THE GRID LAYOUT --- */
+        /* --- GRID LAYOUT --- */
         .grid-area {
             display: grid;
-            grid-template-columns: 50px auto; /* Left Label | Grid */
-            grid-template-rows: 50px auto;    /* Top Label  | Grid */
-            gap: 5px;
+            grid-template-columns: 60px auto; 
+            grid-template-rows: 60px auto;    
+            gap: 0;
+            margin-bottom: 50px;
         }
 
-        /* Team Names on Grid */
         .grid-label-top {
-            grid-column: 2;
-            grid-row: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #555;
-            text-transform: uppercase;
+            grid-column: 2; grid-row: 1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; color: #444;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding-bottom: 10px;
         }
         
         .grid-label-left {
-            grid-column: 1;
-            grid-row: 2;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #555;
-            text-transform: uppercase;
+            grid-column: 1; grid-row: 2;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; color: #444;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding-right: 10px;
+            height: 100%; /* Ensures centering works */
         }
 
-        /* The Actual Grid */
         .grid-container {
-            grid-column: 2;
-            grid-row: 2;
+            grid-column: 2; grid-row: 2;
             display: grid;
             grid-template-columns: var(--cell-size) repeat(10, var(--cell-size));
             grid-template-rows: var(--cell-size) repeat(10, var(--cell-size));
-            border: 2px solid #333;
+            border: 4px solid #333;
+            background: #333; /* Gap color */
+            gap: 2px;
         }
 
         .cell {
             background: white;
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            user-select: none;
-            color: black; /* Always black text */
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.1rem;
+            cursor: pointer; user-select: none; color: black;
             position: relative;
         }
 
-        /* Header Cells (Numbers) */
         .cell.header {
-            color: white;
-            font-size: 1.3rem;
-            border: 1px solid rgba(0,0,0,0.2);
+            color: white; font-size: 1.3rem;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* Active Winning Box (Current Score) */
+        /* Border Logic */
         .cell.current-winner {
-            box-shadow: inset 0 0 0 4px var(--winner-border);
-            background-color: rgba(255, 215, 0, 0.2); /* Light gold tint */
-            z-index: 5;
-        }
-
-        /* Past Quarter Winners (Locked borders) */
-        .cell.past-winner {
-            box-shadow: inset 0 0 0 4px #d32f2f; /* Red border for finished quarters */
-            z-index: 4;
+            z-index: 10;
+            box-shadow: inset 0 0 0 6px var(--winner-border); /* Thick inner border */
         }
         
-        /* Optional: Add a small badge to past winners */
-        .cell.past-winner::after {
-            content: '★';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            font-size: 10px;
-            color: #d32f2f;
+        .cell.past-winner {
+            box-shadow: inset 0 0 0 6px #d32f2f; /* Thick Red Border */
         }
 
         /* --- UTILS --- */
-        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
+        .btn:hover { opacity: 0.9; }
         .btn-primary { background: #1976d2; color: white; }
         .btn-danger { background: #d32f2f; color: white; }
-        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
-        .hidden { display: none !important; }
+        .btn-success { background: #2e7d32; color: white; }
+        .btn-outline { background: transparent; border: 2px solid #666; color: #666; }
+        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
         
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:100; }
-        .modal-content { background:white; padding:30px; border-radius:8px; width:300px; text-align:center; }
-        .modal-content input { width:90%; padding:10px; margin:10px 0; border:1px solid #ccc; }
+        .hidden { display: none !important; }
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:100; backdrop-filter: blur(2px); }
+        .modal-content { background:white; padding:30px; border-radius:8px; width:300px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content input { width:90%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius: 4px; }
 
     </style>
 </head>
@@ -203,44 +169,59 @@
     <div id="modal" class="modal hidden">
         <div class="modal-content">
             <h3>Add Player</h3>
-            <input type="text" id="new-name" placeholder="Name">
+            <input type="text" id="new-name" placeholder="Full Name">
             <input type="text" id="new-init" placeholder="Initials (e.g. JD)" maxlength="3">
             <br><br>
-            <button class="btn btn-primary" onclick="addPlayer()">Save</button>
-            <button class="btn" onclick="closeModal()">Cancel</button>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addPlayer()">Add Player</button>
+            </div>
         </div>
     </div>
 
     <div class="sidebar">
-        <h2>🏈 Squares App</h2>
+        <h2 style="margin-top: 0; color: #1976d2;">🏈 Squares Pro</h2>
         
         <div id="setup-controls">
-            <button id="btn-add-player" class="btn btn-primary" style="width:100%" onclick="openModal()">+ Add Player</button>
-            <p style="font-size:0.9rem; color:#666; margin-top:10px;">Select a player below, then click squares.</p>
+            <button class="btn btn-primary" style="width:100%" onclick="openModal()">+ Add Player</button>
+            <p style="font-size:0.85rem; color:#666; text-align: center; margin-bottom: 5px;">
+                Select a player below, then click squares.
+            </p>
         </div>
 
-        <div id="player-list" class="player-list">
-            </div>
+        <div id="player-list" class="player-list"></div>
 
-        <div style="margin-top:20px; border-top:1px solid #ddd; padding-top:20px;">
+        <div style="margin-top:15px;">
             <div id="team-selects">
-                <label><strong>Top Team:</strong></label>
-                <select id="sel-top" style="width:100%; padding:8px; margin-bottom:10px;"></select>
+                <label style="font-size: 0.85rem; font-weight: bold;">Top Team:</label>
+                <select id="sel-top" style="width:100%; padding:8px; margin-bottom:10px; border-radius:4px;"></select>
                 
-                <label><strong>Left Team:</strong></label>
-                <select id="sel-left" style="width:100%; padding:8px; margin-bottom:10px;"></select>
+                <label style="font-size: 0.85rem; font-weight: bold;">Left Team:</label>
+                <select id="sel-left" style="width:100%; padding:8px; margin-bottom:10px; border-radius:4px;"></select>
                 
-                <p id="square-count">0 / 100 Squares Filled</p>
-                <button class="btn btn-primary" style="width:100%; font-size:1.1rem;" onclick="startGame()">START GAME</button>
+                <p id="square-count" style="text-align: center; font-weight: bold; margin: 10px 0;">0 / 100 Filled</p>
+                <button class="btn btn-success" style="width:100%; padding: 12px;" onclick="startGame()">START GAME</button>
             </div>
 
             <div id="game-controls" class="hidden">
                 <button class="btn btn-danger" style="width:100%; margin-bottom:10px;" onclick="endQuarter()">End Quarter</button>
-                <div style="font-size:0.85rem; height:150px; overflow-y:auto; background:#f5f5f5; padding:5px; border:1px solid #ccc;">
-                    <strong>History:</strong>
+                <div style="font-size:0.85rem; height:120px; overflow-y:auto; background:#f0f0f0; padding:10px; border:1px solid #ddd; border-radius: 4px;">
+                    <strong>Quarter Log:</strong>
                     <ul id="game-log" style="padding-left:20px; margin:5px 0;"></ul>
                 </div>
             </div>
+        </div>
+
+        <div class="data-controls">
+            <label style="font-size:0.8rem; font-weight:bold; color:#666;">DATA & SHARING</label>
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="saveGame()">💾 Save File</button>
+                <button class="btn btn-outline" style="flex:1; font-size:0.8rem;" onclick="document.getElementById('file-input').click()">📂 Load File</button>
+            </div>
+            <input type="file" id="file-input" style="display: none;" onchange="loadGame(this)">
+            <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">
+                To let others play: "Save" this file, email it to them, and tell them to "Load" it here.
+            </p>
         </div>
     </div>
 
@@ -249,7 +230,7 @@
         <div id="scoreboard" class="scoreboard hidden">
             <div class="team-display">
                 <div style="text-align:center;">
-                    <h2 id="sb-name-top" style="margin:0;">Team 1</h2>
+                    <h2 id="sb-name-top" style="margin:0; color:#555;">Team 1</h2>
                     <div class="controls">
                         <button class="btn btn-sm btn-primary" onclick="score(1, 6)">+6</button>
                         <button class="btn btn-sm btn-primary" onclick="score(1, 1)">+1</button>
@@ -257,15 +238,15 @@
                         <button class="btn btn-sm btn-danger" onclick="score(1, -1)">-1</button>
                     </div>
                 </div>
-                <div id="score-top" class="score-big" style="color:#1976d2">0</div>
+                <div id="score-top" class="score-big">0</div>
             </div>
 
-            <div style="font-size:2rem; color:#ccc;">VS</div>
+            <div style="font-size:2.5rem; color:#ccc; font-weight:100;">VS</div>
 
             <div class="team-display" style="justify-content: flex-end;">
-                <div id="score-left" class="score-big" style="color:#d32f2f">0</div>
+                <div id="score-left" class="score-big">0</div>
                 <div style="text-align:center;">
-                    <h2 id="sb-name-left" style="margin:0;">Team 2</h2>
+                    <h2 id="sb-name-left" style="margin:0; color:#555;">Team 2</h2>
                     <div class="controls">
                         <button class="btn btn-sm btn-primary" onclick="score(2, 6)">+6</button>
                         <button class="btn btn-sm btn-primary" onclick="score(2, 1)">+1</button>
@@ -277,8 +258,9 @@
         </div>
 
         <div class="grid-area">
-            <div id="lbl-top" class="grid-label-top"></div>
-            <div id="lbl-left" class="grid-label-left"></div>
+            <div id="lbl-top" class="grid-label-top">TOP TEAM</div>
+            <div id="lbl-left" class="grid-label-left">LEFT TEAM</div>
+            
             <div id="grid" class="grid-container">
                 </div>
         </div>
@@ -286,53 +268,43 @@
     </div>
 
 <script>
-    // --- NFL DATA (Accurate Hex Colors) ---
+    // --- NFL DATA ---
     const TEAMS = [
-        { name: "Arizona Cardinals", color: "#97233F" },
-        { name: "Atlanta Falcons", color: "#A71930" },
-        { name: "Baltimore Ravens", color: "#241773" },
-        { name: "Buffalo Bills", color: "#00338D" },
-        { name: "Carolina Panthers", color: "#0085CA" },
-        { name: "Chicago Bears", color: "#0B162A" },
-        { name: "Cincinnati Bengals", color: "#FB4F14" },
-        { name: "Cleveland Browns", color: "#311D00" },
-        { name: "Dallas Cowboys", color: "#003594" },
-        { name: "Denver Broncos", color: "#FB4F14" },
-        { name: "Detroit Lions", color: "#0076B6" },
-        { name: "Green Bay Packers", color: "#203731" },
-        { name: "Houston Texans", color: "#03202F" },
-        { name: "Indianapolis Colts", color: "#002C5F" },
-        { name: "Jacksonville Jaguars", color: "#006778" },
-        { name: "Kansas City Chiefs", color: "#E31837" },
-        { name: "Las Vegas Raiders", color: "#000000" },
-        { name: "L.A. Chargers", color: "#0080C6" },
-        { name: "L.A. Rams", color: "#003594" },
-        { name: "Miami Dolphins", color: "#008E97" },
-        { name: "Minnesota Vikings", color: "#4F2683" },
-        { name: "New England Patriots", color: "#002244" },
-        { name: "New Orleans Saints", color: "#D3BC8D" },
-        { name: "New York Giants", color: "#0B2265" },
-        { name: "New York Jets", color: "#125740" },
-        { name: "Philadelphia Eagles", color: "#004C54" },
-        { name: "Pittsburgh Steelers", color: "#FFB612" },
-        { name: "San Francisco 49ers", color: "#AA0000" },
-        { name: "Seattle Seahawks", color: "#002244" },
-        { name: "Tampa Bay Buccaneers", color: "#D50A0A" },
-        { name: "Tennessee Titans", color: "#0C2340" },
-        { name: "Washington Commanders", color: "#5A1414" }
+        { name: "Arizona Cardinals", color: "#97233F" }, { name: "Atlanta Falcons", color: "#A71930" },
+        { name: "Baltimore Ravens", color: "#241773" }, { name: "Buffalo Bills", color: "#00338D" },
+        { name: "Carolina Panthers", color: "#0085CA" }, { name: "Chicago Bears", color: "#0B162A" },
+        { name: "Cincinnati Bengals", color: "#FB4F14" }, { name: "Cleveland Browns", color: "#311D00" },
+        { name: "Dallas Cowboys", color: "#003594" }, { name: "Denver Broncos", color: "#FB4F14" },
+        { name: "Detroit Lions", color: "#0076B6" }, { name: "Green Bay Packers", color: "#203731" },
+        { name: "Houston Texans", color: "#03202F" }, { name: "Indianapolis Colts", color: "#002C5F" },
+        { name: "Jacksonville Jaguars", color: "#006778" }, { name: "Kansas City Chiefs", color: "#E31837" },
+        { name: "Las Vegas Raiders", color: "#000000" }, { name: "L.A. Chargers", color: "#0080C6" },
+        { name: "L.A. Rams", color: "#003594" }, { name: "Miami Dolphins", color: "#008E97" },
+        { name: "Minnesota Vikings", color: "#4F2683" }, { name: "New England Patriots", color: "#002244" },
+        { name: "New Orleans Saints", color: "#D3BC8D" }, { name: "New York Giants", color: "#0B2265" },
+        { name: "New York Jets", color: "#125740" }, { name: "Philadelphia Eagles", color: "#004C54" },
+        { name: "Pittsburgh Steelers", color: "#FFB612" }, { name: "San Francisco 49ers", color: "#AA0000" },
+        { name: "Seattle Seahawks", color: "#002244" }, { name: "Tampa Bay Buccaneers", color: "#D50A0A" },
+        { name: "Tennessee Titans", color: "#0C2340" }, { name: "Washington Commanders", color: "#5A1414" }
     ];
 
     // --- STATE ---
-    let players = [];
+    let state = {
+        players: [],
+        gridOwners: Array(100).fill(null), // Stores player index or null
+        topNums: Array(10).fill('?'),
+        leftNums: Array(10).fill('?'),
+        gameStarted: false,
+        scoreT: 0,
+        scoreL: 0,
+        teamTIdx: 0,
+        teamLIdx: 1,
+        quarter: 1,
+        pastWinners: [],
+        log: []
+    };
+    
     let activePlayerIdx = null;
-    let gridOwners = Array(100).fill(null);
-    let topNums = Array(10).fill('?');
-    let leftNums = Array(10).fill('?');
-    let gameStarted = false;
-    let scoreT = 0, scoreL = 0;
-    let teamT = null, teamL = null;
-    let quarter = 1;
-    let pastWinners = []; // Store indices of boxes that won quarters
 
     // --- INIT ---
     window.onload = () => {
@@ -342,9 +314,70 @@
             sT.add(new Option(t.name, i));
             sL.add(new Option(t.name, i));
         });
-        sL.selectedIndex = 1; // Different default
+        sL.selectedIndex = 1; 
         renderGrid();
     };
+
+    // --- DATA SAVING (EXPORT/IMPORT) ---
+    function saveGame() {
+        const dataStr = JSON.stringify(state);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = 'squares_game_data.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    }
+
+    function loadGame(input) {
+        const file = input.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const loadedState = JSON.parse(e.target.result);
+                state = loadedState;
+                
+                // Restore UI
+                if(state.gameStarted) {
+                    document.getElementById('setup-controls').classList.add('hidden');
+                    document.getElementById('team-selects').classList.add('hidden');
+                    document.getElementById('game-controls').classList.remove('hidden');
+                    document.getElementById('scoreboard').classList.remove('hidden');
+                    updateTeamLabels();
+                } else {
+                    document.getElementById('setup-controls').classList.remove('hidden');
+                    document.getElementById('team-selects').classList.remove('hidden');
+                    document.getElementById('game-controls').classList.add('hidden');
+                    document.getElementById('scoreboard').classList.add('hidden');
+                }
+                
+                // Restore inputs
+                document.getElementById('sel-top').selectedIndex = state.teamTIdx;
+                document.getElementById('sel-left').selectedIndex = state.teamLIdx;
+
+                // Restore Logs
+                const logList = document.getElementById('game-log');
+                logList.innerHTML = '';
+                state.log.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = item;
+                    logList.appendChild(li);
+                });
+
+                renderPlayers();
+                renderGrid();
+                if(state.gameStarted) highlightWinner();
+                alert("Game Loaded Successfully!");
+            } catch(err) {
+                alert("Error loading file. " + err);
+            }
+        };
+        reader.readAsText(file);
+        input.value = ''; // Reset input
+    }
 
     // --- PLAYERS ---
     function openModal() { document.getElementById('modal').classList.remove('hidden'); }
@@ -355,10 +388,10 @@
         const init = document.getElementById('new-init').value.trim().toUpperCase();
         if(!name || !init) return alert("Enter Name and Initials");
         
-        players.push({ name, init, count: 0 });
+        state.players.push({ name, init, count: 0 });
         document.getElementById('new-name').value = '';
         document.getElementById('new-init').value = '';
-        activePlayerIdx = players.length - 1;
+        activePlayerIdx = state.players.length - 1;
         
         closeModal();
         renderPlayers();
@@ -367,11 +400,11 @@
     function renderPlayers() {
         const list = document.getElementById('player-list');
         list.innerHTML = '';
-        players.forEach((p, i) => {
+        state.players.forEach((p, i) => {
             const div = document.createElement('div');
             div.className = `player-item ${i === activePlayerIdx ? 'active' : ''}`;
-            div.innerHTML = `<span>${p.init} - ${p.name}</span> <span style="background:#ddd; padding:2px 6px; border-radius:10px; font-size:0.8rem;">${p.count}</span>`;
-            if(!gameStarted) {
+            div.innerHTML = `<span>${p.init} - ${p.name}</span> <span style="background:#eee; padding:2px 8px; border-radius:10px; font-weight:bold;">${p.count}</span>`;
+            if(!state.gameStarted) {
                 div.onclick = () => { activePlayerIdx = i; renderPlayers(); };
             } else {
                 div.style.cursor = 'default';
@@ -381,25 +414,28 @@
         });
     }
 
-    // --- GRID LOGIC ---
+    // --- GRID ---
     function renderGrid() {
         const grid = document.getElementById('grid');
         grid.innerHTML = '';
 
-        // 1. Corner (Top-Left)
+        // Colors
+        const tColor = state.gameStarted ? TEAMS[state.teamTIdx].color : '#444';
+        const lColor = state.gameStarted ? TEAMS[state.teamLIdx].color : '#444';
+
+        // 1. Corner
         const corner = document.createElement('div');
         corner.className = 'cell header';
         corner.style.background = '#222';
-        corner.textContent = gameStarted ? `Q${quarter}` : '';
+        corner.textContent = state.gameStarted ? `Q${state.quarter}` : '';
         grid.appendChild(corner);
 
-        // 2. Top Headers (Numbers)
-        topNums.forEach(n => {
+        // 2. Top Headers
+        state.topNums.forEach(n => {
             const div = document.createElement('div');
             div.className = 'cell header';
             div.textContent = n;
-            if(gameStarted) div.style.backgroundColor = teamT.color;
-            else div.style.backgroundColor = '#666';
+            div.style.backgroundColor = tColor;
             grid.appendChild(div);
         });
 
@@ -408,26 +444,27 @@
             // Left Header
             const leftHead = document.createElement('div');
             leftHead.className = 'cell header';
-            leftHead.textContent = leftNums[r];
-            if(gameStarted) leftHead.style.backgroundColor = teamL.color;
-            else leftHead.style.backgroundColor = '#666';
+            leftHead.textContent = state.leftNums[r];
+            leftHead.style.backgroundColor = lColor;
             grid.appendChild(leftHead);
 
             // Cells
             for(let c=0; c<10; c++) {
                 const idx = r * 10 + c;
-                const owner = gridOwners[idx];
+                const ownerIdx = state.gridOwners[idx];
                 const div = document.createElement('div');
                 div.className = 'cell';
-                div.textContent = owner ? owner.init : '';
                 div.id = `c-${r}-${c}`;
                 
-                // Past Winner Logic
-                if(pastWinners.includes(idx)) {
+                if(ownerIdx !== null) {
+                    div.textContent = state.players[ownerIdx].init;
+                }
+
+                if(state.pastWinners.includes(idx)) {
                     div.classList.add('past-winner');
                 }
 
-                if(!gameStarted) {
+                if(!state.gameStarted) {
                     div.onclick = () => toggleSquare(idx);
                 }
                 
@@ -435,19 +472,19 @@
             }
         }
         
-        document.getElementById('square-count').textContent = `${gridOwners.filter(x=>x).length} / 100 Squares Filled`;
+        document.getElementById('square-count').textContent = `${state.gridOwners.filter(x => x !== null).length} / 100 Squares Filled`;
     }
 
     function toggleSquare(idx) {
         if(activePlayerIdx === null) return alert("Add and select a player first.");
-        const p = players[activePlayerIdx];
-
-        if(gridOwners[idx] === p) {
-            gridOwners[idx] = null;
-            p.count--;
-        } else if(gridOwners[idx] === null) {
-            gridOwners[idx] = p;
-            p.count++;
+        
+        // Use Index to reference player
+        if(state.gridOwners[idx] === activePlayerIdx) {
+            state.gridOwners[idx] = null;
+            state.players[activePlayerIdx].count--;
+        } else if(state.gridOwners[idx] === null) {
+            state.gridOwners[idx] = activePlayerIdx;
+            state.players[activePlayerIdx].count++;
         } else {
             alert("Square taken!");
             return;
@@ -456,87 +493,96 @@
         renderPlayers();
     }
 
-    // --- GAME LOGIC ---
+    // --- GAMEPLAY ---
     function startGame() {
-        const filled = gridOwners.filter(x=>x).length;
+        const filled = state.gridOwners.filter(x => x !== null).length;
         if(filled < 100 && !confirm("Grid isn't full. Start anyway?")) return;
 
-        // Lock Data
-        teamT = TEAMS[document.getElementById('sel-top').value];
-        teamL = TEAMS[document.getElementById('sel-left').value];
+        // Save Selections
+        state.teamTIdx = document.getElementById('sel-top').selectedIndex;
+        state.teamLIdx = document.getElementById('sel-left').selectedIndex;
         
         // Randomize
-        topNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
-        leftNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+        state.topNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+        state.leftNums = [0,1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
         
-        gameStarted = true;
+        state.gameStarted = true;
 
-        // UI Transition
+        // Transition
         document.getElementById('setup-controls').classList.add('hidden');
         document.getElementById('team-selects').classList.add('hidden');
         document.getElementById('game-controls').classList.remove('hidden');
         document.getElementById('scoreboard').classList.remove('hidden');
 
-        // Set Labels & Colors
-        document.getElementById('lbl-top').textContent = teamT.name;
-        document.getElementById('lbl-top').style.color = teamT.color;
-        document.getElementById('sb-name-top').textContent = teamT.name;
-        document.getElementById('score-top').style.color = teamT.color;
-
-        document.getElementById('lbl-left').textContent = teamL.name;
-        document.getElementById('lbl-left').style.color = teamL.color;
-        document.getElementById('sb-name-left').textContent = teamL.name;
-        document.getElementById('score-left').style.color = teamL.color;
-
+        updateTeamLabels();
         renderGrid();
-        renderPlayers(); // Locks UI
+        renderPlayers();
         highlightWinner();
     }
 
-    function score(team, val) {
-        if(team===1) scoreT = Math.max(0, scoreT + val);
-        else scoreL = Math.max(0, scoreL + val);
+    function updateTeamLabels() {
+        const t = TEAMS[state.teamTIdx];
+        const l = TEAMS[state.teamLIdx];
 
-        document.getElementById('score-top').textContent = scoreT;
-        document.getElementById('score-left').textContent = scoreL;
+        document.getElementById('lbl-top').textContent = t.name;
+        document.getElementById('lbl-top').style.color = t.color;
+        
+        document.getElementById('lbl-left').textContent = l.name;
+        document.getElementById('lbl-left').style.color = l.color;
+
+        document.getElementById('sb-name-top').textContent = t.name;
+        document.getElementById('score-top').style.color = t.color;
+        document.getElementById('score-top').textContent = state.scoreT;
+
+        document.getElementById('sb-name-left').textContent = l.name;
+        document.getElementById('score-left').style.color = l.color;
+        document.getElementById('score-left').textContent = state.scoreL;
+    }
+
+    function score(team, val) {
+        if(team===1) state.scoreT = Math.max(0, state.scoreT + val);
+        else state.scoreL = Math.max(0, state.scoreL + val);
+        updateTeamLabels(); // Refreshes scores
         highlightWinner();
     }
 
     function highlightWinner() {
-        // Remove current winner highlight (keep past winners)
         document.querySelectorAll('.current-winner').forEach(e => e.classList.remove('current-winner'));
 
-        const digitT = scoreT % 10;
-        const digitL = scoreL % 10;
-
-        const col = topNums.indexOf(digitT);
-        const row = leftNums.indexOf(digitL);
+        const digitT = state.scoreT % 10;
+        const digitL = state.scoreL % 10;
+        const col = state.topNums.indexOf(digitT);
+        const row = state.leftNums.indexOf(digitL);
 
         const cell = document.getElementById(`c-${row}-${col}`);
         if(cell) cell.classList.add('current-winner');
     }
 
     function endQuarter() {
-        const digitT = scoreT % 10;
-        const digitL = scoreL % 10;
-        const col = topNums.indexOf(digitT);
-        const row = leftNums.indexOf(digitL);
+        const digitT = state.scoreT % 10;
+        const digitL = state.scoreL % 10;
+        const col = state.topNums.indexOf(digitT);
+        const row = state.leftNums.indexOf(digitL);
         const idx = row * 10 + col;
 
-        // 1. Add to permanent winners
-        pastWinners.push(idx);
+        state.pastWinners.push(idx);
 
-        // 2. Log it
-        const winner = gridOwners[idx];
-        const log = document.getElementById('game-log');
+        // Log
+        const ownerIdx = state.gridOwners[idx];
+        const p = ownerIdx !== null ? state.players[ownerIdx] : null;
+        const teamT = TEAMS[state.teamTIdx];
+        const teamL = TEAMS[state.teamLIdx];
+        
+        const logMsg = `<strong>Q${state.quarter}:</strong> ${teamT.name} ${state.scoreT} - ${teamL.name} ${state.scoreL} <br> Winner: ${p ? p.init : 'Empty'}`;
+        state.log.push(logMsg);
+        
         const li = document.createElement('li');
-        li.innerHTML = `<strong>Q${quarter}:</strong> ${teamT.name} ${scoreT} - ${teamL.name} ${scoreL} <br> Winner: ${winner ? winner.init : 'Empty'}`;
-        log.appendChild(li);
+        li.innerHTML = logMsg;
+        document.getElementById('game-log').appendChild(li);
 
-        // 3. Advance
-        quarter++;
-        renderGrid(); // Re-renders grid, applying .past-winner class
-        highlightWinner(); // Re-apply current winner highlight on top
+        state.quarter++;
+        renderGrid(); 
+        highlightWinner();
     }
 
 </script>

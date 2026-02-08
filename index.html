@@ -3,498 +3,639 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Squares Helper</title>
+    <title>Pro Football Squares</title>
     <style>
         :root {
-            --primary: #2e7d32; /* Grass Green */
-            --secondary: #1b5e20; /* Dark Green */
-            --accent: #ffeb3b; /* Yellow */
-            --text-light: #ffffff;
-            --text-dark: #333333;
-            --highlight: #ff5722; /* Orange for active player */
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #2e7d32;
+            --accent-color: #ffb300;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --grid-border: #333;
+            --cell-bg: #2a2a2a;
+            --cell-taken: #388e3c;
+            --cell-winner: #ffd700;
+            --header-size: 50px;
         }
+
+        * { box-sizing: border-box; outline: none; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             margin: 0;
-            padding: 20px;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling in game mode */
             display: flex;
             flex-direction: column;
-            align-items: center;
         }
 
-        h1, h2 {
-            color: var(--secondary);
-            margin-bottom: 10px;
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 14px;
         }
+        .btn-primary { background: var(--primary-color); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .btn-primary:hover { background: #388e3c; transform: translateY(-1px); }
+        .btn-secondary { background: #424242; color: white; }
+        .btn-danger { background: #d32f2f; color: white; }
+        .btn-score { padding: 5px 10px; font-size: 0.8rem; margin: 2px; }
 
-        .container {
-            background: white;
-            padding: 20px;
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--surface-color);
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-width: 800px;
-            width: 100%;
+            width: 90%; max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #333;
             text-align: center;
         }
-
-        /* --- Buttons & Inputs --- */
-        button {
-            cursor: pointer;
-            padding: 10px 20px;
-            border: none;
+        .modal-input {
+            width: 100%; padding: 12px; margin: 10px 0;
+            background: #333; border: 1px solid #444; color: white;
             border-radius: 6px;
-            font-weight: bold;
-            transition: background 0.2s;
-            margin: 5px;
         }
 
-        .btn-primary { background-color: var(--primary); color: var(--text-light); }
-        .btn-primary:hover { background-color: var(--secondary); }
-        
-        .btn-danger { background-color: #d32f2f; color: white; }
-        .btn-danger:hover { background-color: #b71c1c; }
-
-        .btn-action { background-color: #0288d1; color: white; padding: 5px 10px; font-size: 0.9em; }
-        
-        input[type="text"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            margin: 5px;
-        }
-
-        /* --- Screens --- */
-        .screen { display: none; }
-        .active-screen { display: block; }
-
-        /* --- Setup Phase --- */
-        .player-creation {
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .player-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .player-badge {
-            background: #e0e0e0;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            user-select: none;
-            border: 2px solid transparent;
-        }
-
-        .player-badge.selected {
-            background: var(--highlight);
-            color: white;
-            border-color: var(--secondary);
-            box-shadow: 0 0 8px rgba(0,0,0,0.2);
-        }
-
-        /* --- The Grid --- */
-        .grid-container {
-            display: grid;
-            grid-template-columns: 40px repeat(10, 1fr); /* 1 Header col + 10 game cols */
-            gap: 2px;
-            background-color: #ccc;
-            border: 2px solid #333;
-            margin: 20px auto;
-            max-width: 600px;
-        }
-
-        .grid-cell {
-            background-color: white;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8em;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-            overflow: hidden;
-        }
-
-        .grid-cell.taken {
-            background-color: #e8f5e9;
-            color: var(--secondary);
-        }
-
-        .grid-cell.winner {
-            background-color: var(--accent);
-            animation: pulse 1s infinite;
-        }
-
-        .header-cell {
-            background-color: var(--secondary);
-            color: white;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .corner-cell {
-            background-color: #333;
-            color: white;
-            font-size: 0.7em;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            line-height: 1;
-        }
-
-        /* --- Game Dashboard --- */
-        .scoreboard {
-            display: flex;
-            justify-content: space-around;
-            background: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .team-score {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .score-display {
-            font-size: 3em;
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            color: var(--accent);
-        }
-
-        .score-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            margin-top: 10px;
-        }
-
-        .quarter-log {
-            text-align: left;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 20px;
-            max-height: 150px;
+        /* --- LAYOUTS --- */
+        .screen {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
             overflow-y: auto;
         }
 
+        /* Setup Specifics */
+        .setup-header {
+            padding: 20px; text-align: center;
+            background: var(--surface-color);
+            border-bottom: 1px solid #333;
+        }
+        .team-selectors {
+            display: flex; justify-content: center; gap: 20px;
+            padding: 20px; flex-wrap: wrap;
+        }
+        .team-select-box {
+            background: #252525; padding: 15px; border-radius: 8px;
+            text-align: center; width: 250px;
+        }
+        .team-select-box select {
+            width: 100%; padding: 8px; background: #333; color: white; border: none; margin-top: 10px;
+        }
+        .player-bar {
+            padding: 10px; background: #1a1a1a; display: flex; gap: 10px;
+            overflow-x: auto; align-items: center; border-bottom: 1px solid #333;
+        }
+        .player-chip {
+            background: #333; padding: 6px 12px; border-radius: 20px;
+            white-space: nowrap; cursor: pointer; border: 2px solid transparent;
+            display: flex; align-items: center; gap: 5px; font-size: 0.9rem;
+        }
+        .player-chip.active { border-color: var(--accent-color); background: #444; color: var(--accent-color); }
+
+        /* --- THE GRID --- */
+        .game-board-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .main-grid {
+            display: grid;
+            /* 1 Header Col + 10 Game Cols */
+            grid-template-columns: var(--header-size) repeat(10, 1fr); 
+            /* 1 Header Row + 10 Game Rows */
+            grid-template-rows: var(--header-size) repeat(10, 1fr);
+            gap: 2px;
+            width: 100%; height: 100%;
+            max-width: 90vh; max-height: 90vh; /* Keep it square-ish */
+            aspect-ratio: 1 / 1;
+        }
+
+        /* Cells */
+        .cell {
+            background: var(--cell-bg);
+            display: flex; justify-content: center; align-items: center;
+            text-align: center; cursor: pointer;
+            font-size: 1rem; font-weight: bold;
+            user-select: none; position: relative;
+            color: #ddd;
+        }
+        .cell span { pointer-events: none; }
+        .cell.header { background: #333; color: white; font-size: 1.2rem; }
+        .cell.taken { background: var(--cell-taken); color: white; border: 1px solid rgba(255,255,255,0.1); }
+        .cell.winner { 
+            background: var(--cell-winner); color: #000; 
+            animation: pulse 1.5s infinite;
+            z-index: 10;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+        
+        /* Team Labels on Grid */
+        .top-team-label {
+            grid-column: 2 / 12; grid-row: 1;
+            background: var(--surface-color);
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; font-weight: bold; text-transform: uppercase;
+            border-bottom: 3px solid transparent; /* Colored via JS */
+        }
+        .left-team-label {
+            grid-column: 1; grid-row: 2 / 12;
+            background: var(--surface-color);
+            writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; font-weight: bold; text-transform: uppercase;
+            border-left: 3px solid transparent; /* Colored via JS */
+        }
+        .grid-logo { height: 30px; width: 30px; object-fit: contain; }
+        .grid-logo-lg { height: 60px; width: 60px; object-fit: contain; }
+
+        /* --- GAME DASHBOARD (Top Bar) --- */
+        .dashboard {
+            background: var(--surface-color);
+            padding: 10px 20px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+        
+        .score-box {
+            display: flex; align-items: center; gap: 15px;
+        }
+        .score-box.right { justify-content: flex-end; text-align: right; }
+        
+        .team-info h2 { margin: 0; font-size: 1.2rem; }
+        .big-score { font-size: 2.5rem; font-weight: 800; font-family: monospace; color: var(--accent-color); line-height: 1; }
+        
+        .game-controls { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+        .quarter-badge { background: #444; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
+
+        /* Floating Quarter Winner Log */
+        .winner-log {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.8); padding: 15px;
+            border-radius: 8px; border: 1px solid #444;
+            max-width: 300px;
+            pointer-events: none; /* Let clicks pass through */
+        }
+        .winner-log h4 { margin: 0 0 10px 0; color: var(--accent-color); }
+        .winner-log ul { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+        .winner-log li { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px; }
+
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
 
-        @media (max-width: 600px) {
-            .grid-cell { font-size: 0.6em; }
-            .scoreboard { flex-direction: column; gap: 20px; }
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .game-controls { grid-column: 1 / -1; flex-direction: row; justify-content: center; order: 3; }
+            .score-box { flex-direction: column; text-align: center; }
+            .score-box.right { flex-direction: column; text-align: center; }
+            .big-score { font-size: 1.8rem; }
+            .main-grid { font-size: 0.7rem; }
+            .grid-logo { width: 20px; height: 20px; }
+            .player-chip { padding: 4px 8px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    
-    <div id="setup-screen" class="screen active-screen">
-        <h1>🏈 Square Setup</h1>
-        
-        <div class="player-creation">
-            <h3>1. Create Players</h3>
-            <input type="text" id="new-player-initials" placeholder="Enter Initials (e.g. JD)" maxlength="3">
-            <button class="btn-primary" onclick="addPlayer()">Add Player</button>
-            <div id="player-list" class="player-list">
-                </div>
-            <p style="font-size: 0.9em; color: #666;">Click a player above to select them, then click squares below.</p>
-        </div>
+    <script>
+        const NFL_TEAMS = [
+            { abbr: 'ARI', name: 'Arizona Cardinals', color: '#97233F' },
+            { abbr: 'ATL', name: 'Atlanta Falcons', color: '#A71930' },
+            { abbr: 'BAL', name: 'Baltimore Ravens', color: '#241773' },
+            { abbr: 'BUF', name: 'Buffalo Bills', color: '#00338D' },
+            { abbr: 'CAR', name: 'Carolina Panthers', color: '#0085CA' },
+            { abbr: 'CHI', name: 'Chicago Bears', color: '#0B162A' },
+            { abbr: 'CIN', name: 'Cincinnati Bengals', color: '#FB4F14' },
+            { abbr: 'CLE', name: 'Cleveland Browns', color: '#311D00' },
+            { abbr: 'DAL', name: 'Dallas Cowboys', color: '#003594' },
+            { abbr: 'DEN', name: 'Denver Broncos', color: '#FB4F14' },
+            { abbr: 'DET', name: 'Detroit Lions', color: '#0076B6' },
+            { abbr: 'GB', name: 'Green Bay Packers', color: '#203731' },
+            { abbr: 'HOU', name: 'Houston Texans', color: '#03202F' },
+            { abbr: 'IND', name: 'Indianapolis Colts', color: '#002C5F' },
+            { abbr: 'JAX', name: 'Jacksonville Jaguars', color: '#006778' },
+            { abbr: 'KC', name: 'Kansas City Chiefs', color: '#E31837' },
+            { abbr: 'LV', name: 'Las Vegas Raiders', color: '#000000' },
+            { abbr: 'LAC', name: 'Los Angeles Chargers', color: '#0080C6' },
+            { abbr: 'LAR', name: 'Los Angeles Rams', color: '#003594' },
+            { abbr: 'MIA', name: 'Miami Dolphins', color: '#008E97' },
+            { abbr: 'MIN', name: 'Minnesota Vikings', color: '#4F2683' },
+            { abbr: 'NE', name: 'New England Patriots', color: '#002244' },
+            { abbr: 'NO', name: 'New Orleans Saints', color: '#D3BC8D' },
+            { abbr: 'NYG', name: 'New York Giants', color: '#0B2265' },
+            { abbr: 'NYJ', name: 'New York Jets', color: '#125740' },
+            { abbr: 'PHI', name: 'Philadelphia Eagles', color: '#004C54' },
+            { abbr: 'PIT', name: 'Pittsburgh Steelers', color: '#FFB612' },
+            { abbr: 'SF', name: 'San Francisco 49ers', color: '#AA0000' },
+            { abbr: 'SEA', name: 'Seattle Seahawks', color: '#002244' },
+            { abbr: 'TB', name: 'Tampa Bay Buccaneers', color: '#D50A0A' },
+            { abbr: 'TEN', name: 'Tennessee Titans', color: '#0C2340' },
+            { abbr: 'WAS', name: 'Washington Commanders', color: '#5A1414' }
+        ];
 
-        <h3>2. Fill the Grid</h3>
-        <p id="squares-count">Squares filled: 0 / 100</p>
-        
-        <div id="setup-grid" class="grid-container">
-            </div>
+        let state = {
+            players: [],
+            activePlayer: null,
+            grid: Array(100).fill(null),
+            teamTop: null,
+            teamLeft: null,
+            topNumbers: Array(10).fill('?'),
+            leftNumbers: Array(10).fill('?'),
+            scoreTop: 0,
+            scoreLeft: 0,
+            quarter: 1,
+            gameStarted: false
+        };
 
-        <button class="btn-primary" style="font-size: 1.2em; margin-top: 20px;" onclick="startGame()">Start Game & Generate Numbers</button>
-    </div>
+        // --- INIT ---
+        window.onload = () => {
+            populateTeamSelects();
+            renderSetupGrid();
+        };
 
-    <div id="game-screen" class="screen">
-        <h1>🏈 Live Game</h1>
-        
-        <div class="scoreboard">
-            <div class="team-score">
-                <input type="text" id="team1-name" value="Top Team" style="background:transparent; border:none; color:white; text-align:center; font-weight:bold; font-size:1.2em;">
-                <div class="score-display" id="score1">0</div>
-                <div class="score-controls">
-                    <button class="btn-action" onclick="updateScore(1, 6)">+TD</button>
-                    <button class="btn-action" onclick="updateScore(1, 1)">+XP</button>
-                    <button class="btn-action" onclick="updateScore(1, 3)">+FG</button>
-                    <button class="btn-action" onclick="updateScore(1, 2)">+2</button>
-                    <button class="btn-action" onclick="updateScore(1, -1)">-1</button>
-                </div>
-            </div>
-            <div style="align-self:center; font-size: 2em;">VS</div>
-            <div class="team-score">
-                <input type="text" id="team2-name" value="Left Team" style="background:transparent; border:none; color:white; text-align:center; font-weight:bold; font-size:1.2em;">
-                <div class="score-display" id="score2">0</div>
-                <div class="score-controls">
-                    <button class="btn-action" onclick="updateScore(2, 6)">+TD</button>
-                    <button class="btn-action" onclick="updateScore(2, 1)">+XP</button>
-                    <button class="btn-action" onclick="updateScore(2, 3)">+FG</button>
-                    <button class="btn-action" onclick="updateScore(2, 2)">+2</button>
-                    <button class="btn-action" onclick="updateScore(2, -1)">-1</button>
-                </div>
-            </div>
-        </div>
-
-        <button class="btn-primary" onclick="endQuarter()">End Quarter & Check Winner</button>
-
-        <div id="game-grid" class="grid-container">
-            </div>
-
-        <div class="quarter-log">
-            <h3>Quarter Winners:</h3>
-            <ul id="winner-log"></ul>
-        </div>
-        
-        <button class="btn-danger" style="margin-top: 30px;" onclick="resetGame()">Reset Game</button>
-    </div>
-
-</div>
-
-<script>
-    // State
-    let players = [];
-    let activePlayerIndex = null;
-    let gridData = Array(100).fill(null); // 0-99 representing the 10x10 grid
-    let team1Score = 0; // Top Team
-    let team2Score = 0; // Left Team
-    let topNumbers = []; // 0-9 random
-    let leftNumbers = []; // 0-9 random
-    let quarterCount = 1;
-
-    // Initialization
-    function initGrid(elementId, isGame) {
-        const container = document.getElementById(elementId);
-        container.innerHTML = '';
-
-        // Corner
-        const corner = document.createElement('div');
-        corner.className = 'grid-cell corner-cell';
-        corner.innerHTML = 'Left<br>Top';
-        container.appendChild(corner);
-
-        // Top Header (Team 1)
-        for(let i=0; i<10; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell header-cell';
-            cell.id = isGame ? `top-head-${i}` : `setup-top-${i}`;
-            cell.textContent = isGame ? topNumbers[i] : '?';
-            container.appendChild(cell);
+        function populateTeamSelects() {
+            const topSel = document.getElementById('sel-team-top');
+            const leftSel = document.getElementById('sel-team-left');
+            
+            NFL_TEAMS.forEach(t => {
+                const opt = `<option value="${t.abbr}">${t.name}</option>`;
+                topSel.innerHTML += opt;
+                leftSel.innerHTML += opt;
+            });
+            // Defaults
+            leftSel.selectedIndex = 1;
         }
 
-        // Rows
-        for(let r=0; r<10; r++) {
-            // Left Header (Team 2)
-            const leftHead = document.createElement('div');
-            leftHead.className = 'grid-cell header-cell';
-            leftHead.id = isGame ? `left-head-${r}` : `setup-left-${r}`;
-            leftHead.textContent = isGame ? leftNumbers[r] : '?';
-            container.appendChild(leftHead);
+        // --- PLAYER LOGIC ---
+        function openPlayerModal() {
+            document.getElementById('player-modal').classList.remove('hidden');
+            document.getElementById('inp-name').focus();
+        }
 
-            // Grid Cells
-            for(let c=0; c<10; c++) {
-                const index = r * 10 + c;
-                const cell = document.createElement('div');
-                cell.className = 'grid-cell';
-                cell.dataset.index = index;
-                cell.id = isGame ? `game-cell-${r}-${c}` : `setup-cell-${index}`;
-                
-                if(gridData[index]) {
-                    cell.textContent = gridData[index];
-                    cell.classList.add('taken');
-                    // Color code background based on player (simple hash for consistent color)
-                    // Optional styling enhancement
+        function closePlayerModal() {
+            document.getElementById('player-modal').classList.add('hidden');
+            document.getElementById('inp-name').value = '';
+            document.getElementById('inp-init').value = '';
+        }
+
+        function createPlayer() {
+            const name = document.getElementById('inp-name').value.trim();
+            const init = document.getElementById('inp-init').value.trim().toUpperCase();
+
+            if(!name || !init) return alert("Both Name and Initials are required.");
+            if(state.players.find(p => p.initials === init)) return alert("Initials must be unique.");
+
+            const player = { name, initials: init, id: Date.now() };
+            state.players.push(player);
+            state.activePlayer = player;
+            
+            closePlayerModal();
+            renderPlayerBar();
+        }
+
+        function renderPlayerBar() {
+            const bar = document.getElementById('player-bar');
+            bar.innerHTML = '<button class="btn btn-primary" onclick="openPlayerModal()">+ New Player</button>';
+            
+            state.players.forEach(p => {
+                const chip = document.createElement('div');
+                chip.className = `player-chip ${state.activePlayer === p ? 'active' : ''}`;
+                chip.innerHTML = `<strong>${p.initials}</strong> ${p.name}`;
+                chip.onclick = () => {
+                    state.activePlayer = p;
+                    renderPlayerBar();
+                };
+                bar.appendChild(chip);
+            });
+        }
+
+        // --- GRID LOGIC ---
+        function renderSetupGrid() {
+            const container = document.getElementById('setup-grid');
+            container.innerHTML = ''; // Clear
+
+            // Corner
+            container.innerHTML += `<div class="cell header"></div>`;
+            
+            // Top Headers
+            for(let i=0; i<10; i++) container.innerHTML += `<div class="cell header">?</div>`;
+
+            // Rows
+            for(let r=0; r<10; r++) {
+                // Left Header
+                container.innerHTML += `<div class="cell header">?</div>`;
+                // Cells
+                for(let c=0; c<10; c++) {
+                    const idx = r * 10 + c;
+                    const p = state.grid[idx];
+                    const div = document.createElement('div');
+                    div.className = `cell ${p ? 'taken' : ''}`;
+                    div.innerHTML = p ? p.initials : '';
+                    div.onclick = () => handleSquareClick(idx, div);
+                    container.appendChild(div);
                 }
-
-                if(!isGame) {
-                    cell.onclick = () => handleSquareClick(index);
-                }
-
-                container.appendChild(cell);
             }
         }
-    }
 
-    // --- SETUP LOGIC ---
-
-    function addPlayer() {
-        const input = document.getElementById('new-player-initials');
-        const initials = input.value.trim().toUpperCase();
-        
-        if(!initials) return alert("Please enter initials");
-        if(players.includes(initials)) return alert("Player already exists");
-
-        players.push(initials);
-        input.value = '';
-        renderPlayerList();
-        
-        // Auto select new player
-        selectPlayer(players.length - 1);
-    }
-
-    function renderPlayerList() {
-        const list = document.getElementById('player-list');
-        list.innerHTML = '';
-        players.forEach((p, index) => {
-            const badge = document.createElement('div');
-            badge.className = `player-badge ${index === activePlayerIndex ? 'selected' : ''}`;
-            badge.textContent = p;
-            badge.onclick = () => selectPlayer(index);
-            list.appendChild(badge);
-        });
-    }
-
-    function selectPlayer(index) {
-        activePlayerIndex = index;
-        renderPlayerList();
-    }
-
-    function handleSquareClick(index) {
-        if(activePlayerIndex === null) {
-            alert("Please create and select a player first!");
-            return;
-        }
-        
-        // Toggle logic
-        if(gridData[index] === players[activePlayerIndex]) {
-            // Unselect if owned by current player
-            gridData[index] = null;
-        } else {
-            // Select
-            gridData[index] = players[activePlayerIndex];
-        }
-        
-        // Update UI
-        const cell = document.getElementById(`setup-cell-${index}`);
-        cell.textContent = gridData[index] || '';
-        cell.className = gridData[index] ? 'grid-cell taken' : 'grid-cell';
-        
-        updateCounts();
-    }
-
-    function updateCounts() {
-        const filled = gridData.filter(x => x !== null).length;
-        document.getElementById('squares-count').textContent = `Squares filled: ${filled} / 100`;
-    }
-
-    // --- GAME LOGIC ---
-
-    function startGame() {
-        const filled = gridData.filter(x => x !== null).length;
-        if(filled === 0) {
-            if(!confirm("The grid is empty. Start anyway?")) return;
-        }
-
-        // Generate Random Numbers
-        topNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
-        leftNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
-
-        // Switch Screens
-        document.getElementById('setup-screen').classList.remove('active-screen');
-        document.getElementById('game-screen').classList.add('active-screen');
-
-        // Render Game Grid
-        initGrid('game-grid', true);
-    }
-
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
-    }
-
-    function updateScore(team, points) {
-        if(team === 1) {
-            team1Score += points;
-            if(team1Score < 0) team1Score = 0;
-            document.getElementById('score1').textContent = team1Score;
-        } else {
-            team2Score += points;
-            if(team2Score < 0) team2Score = 0;
-            document.getElementById('score2').textContent = team2Score;
-        }
-        clearHighlights(); // Clear previous win highlights if score changes
-    }
-
-    function getLastDigit(num) {
-        return Math.abs(num) % 10;
-    }
-
-    function endQuarter() {
-        const topDigit = getLastDigit(team1Score);
-        const leftDigit = getLastDigit(team2Score);
-
-        // Find indices in the headers
-        const colIndex = topNumbers.indexOf(topDigit); // Top Header corresponds to Columns
-        const rowIndex = leftNumbers.indexOf(leftDigit); // Left Header corresponds to Rows
-
-        // Highlight Winning Square
-        clearHighlights();
-        
-        // Highlight Headers
-        document.getElementById(`top-head-${colIndex}`).style.backgroundColor = 'var(--highlight)';
-        document.getElementById(`left-head-${rowIndex}`).style.backgroundColor = 'var(--highlight)';
-
-        // Highlight Cell
-        const winningCell = document.getElementById(`game-cell-${rowIndex}-${colIndex}`);
-        winningCell.classList.add('winner');
-        
-        const winnerName = gridData[rowIndex * 10 + colIndex] || "Empty Square";
-        
-        // Log it
-        const log = document.getElementById('winner-log');
-        const entry = document.createElement('li');
-        const qName = quarterCount <= 4 ? `Q${quarterCount}` : `OT`;
-        entry.innerHTML = `<strong>${qName}:</strong> Top ${team1Score} - Left ${team2Score} (Sq: ${topDigit}, ${leftDigit}) &rarr; <strong>${winnerName}</strong>`;
-        log.appendChild(entry);
-
-        quarterCount++;
-    }
-
-    function clearHighlights() {
-        document.querySelectorAll('.grid-cell').forEach(c => {
-            c.classList.remove('winner');
-            if(c.classList.contains('header-cell')) {
-                c.style.backgroundColor = ''; // Reset to CSS default
+        function handleSquareClick(idx, el) {
+            if(!state.activePlayer) return alert("Create and select a player first.");
+            
+            if(state.grid[idx] && state.grid[idx].id === state.activePlayer.id) {
+                // Remove ownership
+                state.grid[idx] = null;
+                el.classList.remove('taken');
+                el.innerText = '';
+            } else {
+                // Take square
+                state.grid[idx] = state.activePlayer;
+                el.classList.add('taken');
+                el.innerText = state.activePlayer.initials;
             }
-        });
-    }
+            updateCounts();
+        }
 
-    function resetGame() {
-        if(!confirm("Are you sure? This will clear everything.")) return;
-        location.reload();
-    }
+        function updateCounts() {
+            const count = state.grid.filter(x => x).length;
+            document.getElementById('sq-count').innerText = `${count}/100 Squares`;
+        }
 
-    // Initialize Setup Grid on Load
-    initGrid('setup-grid', false);
+        // --- GAME START ---
+        function startGame() {
+            const tTopAbbr = document.getElementById('sel-team-top').value;
+            const tLeftAbbr = document.getElementById('sel-team-left').value;
 
-</script>
+            if(tTopAbbr === tLeftAbbr) return alert("Please select two different teams.");
+            
+            const filled = state.grid.filter(x => x).length;
+            if(filled < 100 && !confirm(`Only ${filled} squares are filled. Start anyway?`)) return;
+
+            // Set Data
+            state.teamTop = NFL_TEAMS.find(t => t.abbr === tTopAbbr);
+            state.teamLeft = NFL_TEAMS.find(t => t.abbr === tLeftAbbr);
+            
+            // Generate Numbers
+            state.topNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
+            state.leftNumbers = shuffle([0,1,2,3,4,5,6,7,8,9]);
+            state.gameStarted = true;
+
+            // Update DOM
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            renderGameHeader();
+            renderGameGrid();
+        }
+
+        function shuffle(arr) {
+            return arr.sort(() => Math.random() - 0.5);
+        }
+
+        function renderGameHeader() {
+            // Top Team
+            document.getElementById('logo-top').src = `https://a.espncdn.com/i/teamlogos/nfl/500/${state.teamTop.abbr}.png`;
+            document.getElementById('name-top').innerText = state.teamTop.name;
+            document.getElementById('score-top').style.color = state.teamTop.color;
+
+            // Left Team
+            document.getElementById('logo-left').src = `https://a.espncdn.com/i/teamlogos/nfl/500/${state.teamLeft.abbr}.png`;
+            document.getElementById('name-left').innerText = state.teamLeft.name;
+            document.getElementById('score-left').style.color = state.teamLeft.color;
+        }
+
+        function renderGameGrid() {
+            const container = document.getElementById('game-grid');
+            container.innerHTML = '';
+
+            // 1. Top Team Label (Spans grid minus left header)
+            const topLabel = document.createElement('div');
+            topLabel.className = 'top-team-label';
+            topLabel.style.borderBottomColor = state.teamTop.color;
+            topLabel.innerHTML = `<img src="https://a.espncdn.com/i/teamlogos/nfl/500/${state.teamTop.abbr}.png" class="grid-logo"> ${state.teamTop.name}`;
+            // Adjust grid columns for this layout:
+            // We need to inject this carefully. CSS Grid handles strict cells.
+            // Actually, let's keep the labels OUTSIDE the grid cells loop but inside container if using span
+            // But CSS grid is strict. Let's do standard cells.
+            
+            // Grid Layout Re-thought for Pro look:
+            // Row 1: Corner (empty) | [Team 1 Name spanned] -> No, Row 1 is Headers.
+            // Let's stick to standard layout but style headers.
+            
+            // Corner
+            const corner = document.createElement('div');
+            corner.className = 'cell header';
+            corner.style.background = '#000';
+            corner.innerHTML = 'Q' + state.quarter;
+            corner.id = 'grid-corner';
+            container.appendChild(corner);
+
+            // Top Numbers
+            state.topNumbers.forEach((num, i) => {
+                const div = document.createElement('div');
+                div.className = 'cell header';
+                div.innerText = num;
+                div.id = `h-top-${i}`;
+                div.style.borderTop = `4px solid ${state.teamTop.color}`;
+                container.appendChild(div);
+            });
+
+            // Rows
+            for(let r=0; r<10; r++) {
+                // Left Number
+                const leftHead = document.createElement('div');
+                leftHead.className = 'cell header';
+                leftHead.innerText = state.leftNumbers[r];
+                leftHead.id = `h-left-${r}`;
+                leftHead.style.borderLeft = `4px solid ${state.teamLeft.color}`;
+                container.appendChild(leftHead);
+
+                // Game Cells
+                for(let c=0; c<10; c++) {
+                    const idx = r * 10 + c;
+                    const p = state.grid[idx];
+                    const div = document.createElement('div');
+                    div.className = `cell ${p ? 'taken' : ''}`;
+                    div.id = `cell-${r}-${c}`;
+                    div.innerHTML = p ? `<span>${p.initials}</span>` : '';
+                    div.title = p ? p.name : 'Empty'; // Tooltip
+                    container.appendChild(div);
+                }
+            }
+        }
+
+        // --- SCORING & WINNERS ---
+        function adjustScore(team, delta) {
+            if(team === 'top') {
+                state.scoreTop = Math.max(0, state.scoreTop + delta);
+                document.getElementById('score-top').innerText = state.scoreTop;
+            } else {
+                state.scoreLeft = Math.max(0, state.scoreLeft + delta);
+                document.getElementById('score-left').innerText = state.scoreLeft;
+            }
+            highlightWinner();
+        }
+
+        function highlightWinner() {
+            // Remove old
+            document.querySelectorAll('.winner').forEach(e => e.classList.remove('winner'));
+            document.querySelectorAll('.header').forEach(e => e.style.backgroundColor = '');
+
+            const lastTop = state.scoreTop % 10;
+            const lastLeft = state.scoreLeft % 10;
+
+            // Find index in our shuffled arrays
+            const colIdx = state.topNumbers.indexOf(lastTop);
+            const rowIdx = state.leftNumbers.indexOf(lastLeft);
+
+            if(colIdx === -1 || rowIdx === -1) return;
+
+            // Highlight Headers
+            document.getElementById(`h-top-${colIdx}`).style.backgroundColor = state.teamTop.color;
+            document.getElementById(`h-left-${rowIdx}`).style.backgroundColor = state.teamLeft.color;
+
+            // Highlight Cell
+            const cell = document.getElementById(`cell-${rowIdx}-${colIdx}`);
+            cell.classList.add('winner');
+        }
+
+        function endQuarter() {
+            const lastTop = state.scoreTop % 10;
+            const lastLeft = state.scoreLeft % 10;
+            const colIdx = state.topNumbers.indexOf(lastTop);
+            const rowIdx = state.leftNumbers.indexOf(lastLeft);
+            const idx = rowIdx * 10 + colIdx;
+            const winner = state.grid[idx];
+
+            const log = document.getElementById('winner-list');
+            const li = document.createElement('li');
+            const q = state.quarter > 4 ? 'OT' : `Q${state.quarter}`;
+            
+            li.innerHTML = `<strong>${q}:</strong> ${state.teamTop.abbr} ${state.scoreTop} - ${state.teamLeft.abbr} ${state.scoreLeft} <br> 
+                            <span style="color:${varCSS('--accent-color')}">Winner: ${winner ? winner.name : 'Empty'} (${winner ? winner.initials : 'X'})</span>`;
+            log.appendChild(li);
+
+            state.quarter++;
+            document.getElementById('grid-corner').innerText = state.quarter > 4 ? 'OT' : 'Q' + state.quarter;
+        }
+
+        function varCSS(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
+
+    </script>
+
+    <div id="player-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Add New Player</h3>
+            <input type="text" id="inp-name" class="modal-input" placeholder="Full Name (e.g. John Doe)">
+            <input type="text" id="inp-init" class="modal-input" placeholder="Initials (e.g. JD)" maxlength="3">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-secondary" onclick="closePlayerModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createPlayer()">Add Player</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="setup-screen" class="screen">
+        <div class="setup-header">
+            <h1>🏈 Football Squares Setup</h1>
+            <p id="sq-count">0/100 Squares</p>
+        </div>
+        
+        <div class="team-selectors">
+            <div class="team-select-box">
+                <label>Top Team (Columns)</label>
+                <select id="sel-team-top"></select>
+            </div>
+            <div class="team-select-box">
+                <label>Left Team (Rows)</label>
+                <select id="sel-team-left"></select>
+            </div>
+            <button class="btn btn-primary" style="height: fit-content; align-self: center;" onclick="startGame()">START GAME &rarr;</button>
+        </div>
+
+        <div id="player-bar" class="player-bar">
+            <button class="btn btn-primary" onclick="openPlayerModal()">+ New Player</button>
+        </div>
+
+        <div class="game-board-container">
+            <div id="setup-grid" class="main-grid">
+                </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div class="dashboard">
+            <div class="score-box">
+                <img id="logo-top" class="grid-logo-lg">
+                <div class="team-info">
+                    <h2 id="name-top">Team 1</h2>
+                    <div class="score-controls-row">
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('top', 6)">+6</button>
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('top', 1)">+1</button>
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('top', 3)">+3</button>
+                        <button class="btn btn-score btn-danger" onclick="adjustScore('top', -1)">-1</button>
+                    </div>
+                </div>
+                <div id="score-top" class="big-score">0</div>
+            </div>
+
+            <div class="game-controls">
+                <div style="font-weight:bold; color:#666; margin-bottom:5px;">VS</div>
+                <button class="btn btn-primary" onclick="endQuarter()">End Q</button>
+            </div>
+
+            <div class="score-box right">
+                <div id="score-left" class="big-score">0</div>
+                <div class="team-info">
+                    <h2 id="name-left">Team 2</h2>
+                    <div class="score-controls-row">
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('left', 6)">+6</button>
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('left', 1)">+1</button>
+                        <button class="btn btn-score btn-secondary" onclick="adjustScore('left', 3)">+3</button>
+                        <button class="btn btn-score btn-danger" onclick="adjustScore('left', -1)">-1</button>
+                    </div>
+                </div>
+                <img id="logo-left" class="grid-logo-lg">
+            </div>
+        </div>
+
+        <div class="game-board-container" style="background: #111;">
+            <div id="game-grid" class="main-grid">
+                </div>
+        </div>
+
+        <div class="winner-log">
+            <h4>Quarter Winners</h4>
+            <ul id="winner-list"></ul>
+        </div>
+    </div>
 
 </body>
 </html>
